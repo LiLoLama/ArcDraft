@@ -1,10 +1,11 @@
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import useAuthStore from '../store/authStore';
 
 const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/templates', label: 'Templates' },
   { to: '/proposals', label: 'Proposals' },
+  { to: '/products', label: 'Products' },
   { to: '/settings/branding', label: 'Settings' },
 ];
 

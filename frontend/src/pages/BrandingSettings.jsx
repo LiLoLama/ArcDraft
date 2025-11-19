@@ -16,6 +16,20 @@ export default function BrandingSettingsPage() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((prev) => ({ ...prev, logoUrl: reader.result }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoRemove = () => {
+    setForm((prev) => ({ ...prev, logoUrl: '' }));
+  };
+
   const handleSave = async () => {
     const saved = await apiRequest('/api/settings/branding', { method: 'PUT', token, body: form });
     setForm(saved);
@@ -57,11 +71,29 @@ export default function BrandingSettingsPage() {
           ))}
         </div>
       </section>
-      <div className="grid grid-2">
-        <label>
-          Logo URL
-          <input name="logoUrl" value={form.logoUrl || ''} onChange={handleChange} />
-        </label>
+      <div className="grid grid-2 brand-grid">
+        <div className="logo-upload-field">
+          <span className="field-label">Logo Upload</span>
+          <p className="muted">Unterstützt PNG, JPG oder SVG. Wir speichern das Bild verschlüsselt.</p>
+          <div className="logo-upload-panel">
+            {form.logoUrl ? (
+              <img src={form.logoUrl} alt="Logo Vorschau" className="logo-preview" />
+            ) : (
+              <div className="logo-placeholder">Noch kein Logo hochgeladen</div>
+            )}
+            <div className="logo-upload-actions">
+              <label className="upload-button">
+                Bild auswählen
+                <input type="file" accept="image/*" onChange={handleLogoUpload} />
+              </label>
+              {form.logoUrl && (
+                <button type="button" className="ghost-button small" onClick={handleLogoRemove}>
+                  Entfernen
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
         <label>
           Primary Color
           <input name="primaryColor" value={form.primaryColor || ''} onChange={handleChange} />

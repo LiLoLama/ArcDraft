@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiRequest } from '../api/client';
 import useAuthStore from '../store/authStore';
 import { MetricCard } from '../components/MetricCard';
 import { StatusBadge } from '../components/StatusBadge';
+import useProductStore from '../store/productStore';
 
 const initialFormState = {
   clientName: '',
@@ -14,33 +16,6 @@ const initialFormState = {
   tone: 'freundlich',
   language: 'de',
 };
-
-const curatedProducts = [
-  {
-    id: 'strategy-sprint',
-    name: 'Strategie Sprint',
-    description: '3-tägiger Workshop mit Workshops, Research & Priorisierung.',
-    price: '€4.200',
-  },
-  {
-    id: 'ai-rollout',
-    name: 'AI Rollout Paket',
-    description: 'Implementierung von 2–3 Automationen inkl. Training.',
-    price: '€9.800',
-  },
-  {
-    id: 'care-plan',
-    name: 'Care & Success Plan',
-    description: 'Monatliche Betreuung, Optimierungen und KPI Reviews.',
-    price: '€2.200 / Monat',
-  },
-  {
-    id: 'prototype',
-    name: 'Interactive Prototype',
-    description: 'Klickbares Konzept inkl. Copy, UI und Microcopy.',
-    price: '€6.500',
-  },
-];
 
 const fieldConfig = {
   clientName: { label: 'Ansprechpartner*in', placeholder: 'z. B. Alex Client' },
@@ -140,13 +115,16 @@ export default function DashboardPage() {
 
 function ProposalComposerModal({ onClose }) {
   const token = useAuthStore((s) => s.token);
+  const products = useProductStore((s) => s.products);
   const [form, setForm] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [selectedProductIds, setSelectedProductIds] = useState(curatedProducts.slice(0, 2).map((p) => p.id));
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [customProducts, setCustomProducts] = useState([]);
   const [customProductForm, setCustomProductForm] = useState({ name: '', description: '', price: '' });
   const [error, setError] = useState(null);
+
+  const getDefaultProductIds = () => products.slice(0, 2).map((product) => product.id);
 
   useEffect(() => {
     document.body.classList.add('no-scroll');
@@ -154,6 +132,12 @@ function ProposalComposerModal({ onClose }) {
       document.body.classList.remove('no-scroll');
     };
   }, []);
+
+  useEffect(() => {
+    if (products.length > 0 && selectedProductIds.length === 0) {
+      setSelectedProductIds(getDefaultProductIds());
+    }
+  }, [products, selectedProductIds.length]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -167,7 +151,7 @@ function ProposalComposerModal({ onClose }) {
     setSelectedProductIds((prev) => (prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]));
   };
 
-  const availableProducts = [...curatedProducts, ...customProducts];
+  const availableProducts = [...products, ...customProducts];
   const selectedProducts = availableProducts.filter((product) => selectedProductIds.includes(product.id));
 
   const handleAddCustomProduct = (e) => {
@@ -198,7 +182,7 @@ function ProposalComposerModal({ onClose }) {
       setResult({ ...payload.proposal, selectedProducts });
       setForm(initialFormState);
       setCustomProducts([]);
-      setSelectedProductIds(curatedProducts.slice(0, 2).map((p) => p.id));
+      setSelectedProductIds(getDefaultProductIds());
     } catch (err) {
       setError(err.message || 'Etwas ist schiefgelaufen.');
     } finally {
@@ -215,8 +199,10 @@ function ProposalComposerModal({ onClose }) {
             <h3>Erstelle in wenigen Klicks ein liebevoll gestaltetes Proposal</h3>
             <p className="muted">Wir übernehmen Struktur und Story – du bringst Kontext & Angebote mit.</p>
           </div>
-          <button className="ghost-button" type="button" onClick={onClose}>
-            Schließen
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Modal schließen">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 3l10 10m0-10L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
           </button>
         </div>
         {!result ? (
@@ -280,21 +266,30 @@ function ProposalComposerModal({ onClose }) {
                 </div>
                 <span className="chip">{selectedProducts.length} ausgewählt</span>
               </div>
-              <div className="product-grid">
-                {availableProducts.map((product) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    className={`product-card ${selectedProductIds.includes(product.id) ? 'selected' : ''}`}
-                    onClick={() => toggleProduct(product.id)}
-                  >
-                    <span className="price-pill">{product.price}</span>
-                    <strong>{product.name}</strong>
-                    <p className="muted">{product.description || 'Individuelle Beschreibung folgt im Proposal.'}</p>
-                    {product.isCustom && <span className="chip subtle">Eigenes Produkt</span>}
-                  </button>
-                ))}
-              </div>
+              {availableProducts.length > 0 ? (
+                <div className="product-grid">
+                  {availableProducts.map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      className={`product-card ${selectedProductIds.includes(product.id) ? 'selected' : ''}`}
+                      onClick={() => toggleProduct(product.id)}
+                    >
+                      <span className="price-pill">{product.price}</span>
+                      <strong>{product.name}</strong>
+                      <p className="muted">{product.description || 'Individuelle Beschreibung folgt im Proposal.'}</p>
+                      {product.isCustom && <span className="chip subtle">Eigenes Produkt</span>}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="product-empty-state">
+                  <p>Noch keine Produkte verfügbar. Lege sie im Products Bereich an.</p>
+                  <Link to="/products" className="ghost-button small">
+                    Products öffnen
+                  </Link>
+                </div>
+              )}
               <div className="custom-product">
                 <h5>Eigenes Produkt hinzufügen</h5>
                 <p className="muted">Perfekt für individuelle Pakete oder Add-ons.</p>
