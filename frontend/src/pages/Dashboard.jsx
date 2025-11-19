@@ -82,23 +82,6 @@ export default function DashboardPage() {
   const [metrics, setMetrics] = useState(null);
   const [recent, setRecent] = useState([]);
   const [showGenerator, setShowGenerator] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.localStorage.getItem('arc-theme') || 'light';
-    }
-    return 'light';
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('arc-theme', theme);
-    }
-  }, [theme]);
-
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
 
   useEffect(() => {
     if (!token) return;
@@ -114,9 +97,6 @@ export default function DashboardPage() {
           <p className="muted">Alle Proposal-Signale auf einen Blick.</p>
         </div>
         <div className="header-actions">
-          <button type="button" className="ghost-button theme-toggle" onClick={toggleTheme}>
-            {theme === 'dark' ? '☀️ Heller Modus' : '🌙 Warmer Dark Mode'}
-          </button>
           <button className="primary" onClick={() => setShowGenerator(true)}>
             Neues Proposal mit AI
           </button>
@@ -167,6 +147,13 @@ function ProposalComposerModal({ onClose }) {
   const [customProducts, setCustomProducts] = useState([]);
   const [customProductForm, setCustomProductForm] = useState({ name: '', description: '', price: '' });
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    document.body.classList.add('no-scroll');
+    return () => {
+      document.body.classList.remove('no-scroll');
+    };
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
