@@ -41,6 +41,14 @@
   --pill-text: #ffbe91;
   --modal-backdrop: rgba(5, 5, 5, 0.75);
   --table-hover: rgba(255, 255, 255, 0.04);
+  color: #142136;
+  background-color: #fff9f5;
+  --primary: #ff8a65;
+  --primary-dark: #ff6f3c;
+  --secondary: #ffd166;
+  --text-muted: #6f7b91;
+  --card-bg: #ffffff;
+  --stroke: #e2e8f6;
 }
 
 * {
@@ -53,6 +61,9 @@ body {
   background: var(--body-gradient);
   color: var(--text-color);
   transition: background 0.4s ease, color 0.4s ease;
+  background: radial-gradient(circle at top, rgba(255, 209, 102, 0.25), transparent 45%),
+    linear-gradient(180deg, #fff9f5 0%, #f3f6ff 55%, #f0fbff 100%);
+  color: #142136;
 }
 
 a {
@@ -88,6 +99,7 @@ textarea {
 
 .sidebar {
   background: var(--card-bg);
+  background: #ffffff;
   padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -107,6 +119,7 @@ textarea {
   padding: 0.6rem 0.9rem;
   border-radius: 999px;
   color: var(--text-muted);
+  color: #7d879c;
   transition: background 0.2s ease, color 0.2s ease;
 }
 
@@ -139,6 +152,7 @@ textarea {
 .main-content {
   padding: 2.5rem 3rem;
   background: var(--content-gradient);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(245, 249, 255, 0.75));
 }
 
 .page-header {
@@ -163,6 +177,7 @@ textarea {
 .page h1 {
   margin: 0;
   color: var(--text-color);
+  color: #0f172a;
 }
 
 .page {
@@ -174,6 +189,7 @@ textarea {
 .primary {
   background: linear-gradient(120deg, #ffb38a, #ff8a65);
   color: var(--primary-text);
+  color: #551c04;
   border: none;
   padding: 0.75rem 1.6rem;
   border-radius: 999px;
@@ -186,6 +202,8 @@ textarea {
   background: transparent;
   border: 1px solid var(--stroke);
   color: var(--text-color);
+  border: 1px solid rgba(20, 33, 54, 0.12);
+  color: #4b587c;
   padding: 0.6rem 1.2rem;
   border-radius: 999px;
   cursor: pointer;
@@ -218,6 +236,12 @@ textarea {
 
 .data-table tr:hover {
   background: var(--table-hover);
+  border-bottom: 1px solid #f0f3fb;
+  color: #1d2433;
+}
+
+.data-table tr:hover {
+  background: rgba(255, 248, 245, 0.5);
 }
 
 .grid {
@@ -262,6 +286,7 @@ label {
   gap: 0.35rem;
   font-size: 0.9rem;
   color: var(--text-color);
+  color: #1d2433;
 }
 
 input,
@@ -272,6 +297,11 @@ select {
   border-radius: 14px;
   padding: 0.6rem 0.8rem;
   color: var(--text-color);
+  background: #fff;
+  border: 1px solid var(--stroke);
+  border-radius: 14px;
+  padding: 0.6rem 0.8rem;
+  color: inherit;
   transition: border 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -465,12 +495,18 @@ textarea {
   justify-content: center;
   padding: 2rem;
   overflow-y: auto;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
   z-index: 10;
 }
 
 .proposal-modal {
   width: min(960px, 95vw);
   background: var(--card-bg);
+  background: #fff;
   border-radius: 28px;
   box-shadow: 0 35px 80px rgba(15, 23, 42, 0.3);
   overflow: hidden;
@@ -486,6 +522,7 @@ textarea {
   justify-content: space-between;
   gap: 1.5rem;
   border-bottom: 1px solid var(--stroke);
+  border-bottom: 1px solid #f3f3f6;
 }
 
 .modal-content {
@@ -502,6 +539,13 @@ textarea {
   border-radius: 22px;
   padding: 1.25rem 1.5rem;
   border: 1px solid var(--stroke);
+}
+
+.modal-section {
+  background: #f7f9ff;
+  border-radius: 22px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgba(79, 94, 150, 0.1);
 }
 
 .section-header {
@@ -529,6 +573,10 @@ textarea {
   border-radius: 18px;
   padding: 1rem;
   background: var(--card-bg);
+  border: 1.5px solid rgba(20, 33, 54, 0.08);
+  border-radius: 18px;
+  padding: 1rem;
+  background: #fff;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -554,6 +602,8 @@ textarea {
 .price-pill {
   background: var(--pill-bg);
   color: var(--pill-text);
+  background: #fff1eb;
+  color: #c65332;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
   font-size: 0.8rem;
@@ -596,6 +646,7 @@ textarea {
   align-items: center;
   gap: 1rem;
   border-top: 1px solid var(--stroke);
+  border-top: 1px solid #f3f3f6;
   padding-top: 1rem;
 }
 
