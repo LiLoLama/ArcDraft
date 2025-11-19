@@ -428,11 +428,15 @@ textarea {
 }
 
 .section-card {
-  background: rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card-bg);
   padding: 1rem;
   border-radius: 16px;
   border: 1px solid var(--stroke);
+  box-shadow: 0 20px 40px rgba(20, 33, 54, 0.07);
+}
+
+[data-theme='dark'] .section-card {
+  box-shadow: 0 25px 45px rgba(0, 0, 0, 0.45);
 }
 
 .proposal-preview {
@@ -621,17 +625,28 @@ textarea {
   gap: 0.4rem;
   text-align: left;
   cursor: pointer;
+  color: var(--text-color);
+  box-shadow: 0 15px 35px rgba(20, 33, 54, 0.08);
   transition: border 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
+[data-theme='dark'] .product-card {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+
 .product-card.selected {
-  border-color: rgba(255, 138, 101, 0.8);
-  box-shadow: 0 12px 24px rgba(255, 138, 101, 0.25);
+  border-color: var(--primary);
+  box-shadow: 0 15px 35px rgba(255, 138, 101, 0.3);
   transform: translateY(-3px);
+}
+
+[data-theme='dark'] .product-card.selected {
+  box-shadow: 0 18px 40px rgba(255, 138, 101, 0.25);
 }
 
 .product-card strong {
   font-size: 1rem;
+  color: var(--text-color);
 }
 
 .product-card .price-pill {
@@ -810,12 +825,18 @@ textarea {
   border-radius: 18px;
   padding: 1rem 1.25rem;
   background: var(--card-bg);
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
+  color: var(--text-color);
+  box-shadow: 0 15px 35px rgba(15, 23, 42, 0.08);
 }
 
 .product-row strong {
   display: block;
   font-size: 1.05rem;
+  color: var(--text-color);
+}
+
+[data-theme='dark'] .product-row {
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.55);
 }
 
 .product-row button {
