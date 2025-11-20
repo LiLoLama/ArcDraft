@@ -1,7 +1,7 @@
 const statusColors = {
   draft: 'badge-gray',
-  ready_to_send: 'badge-blue',
-  sent: 'badge-blue',
+  ready_to_send: 'badge-green',
+  sent: 'badge-green',
   viewed: 'badge-cyan',
   signed: 'badge-green',
   declined: 'badge-red',

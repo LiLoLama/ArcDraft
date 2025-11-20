@@ -294,7 +294,7 @@ function ProposalComposerModal({ onClose }) {
                         );
                       }
                       return (
-                        <label key={field}>
+                        <label key={field} className={field === 'projectTitle' ? 'project-title-field' : ''}>
                           {config.label}
                           <input
                             type={config.type || 'text'}
