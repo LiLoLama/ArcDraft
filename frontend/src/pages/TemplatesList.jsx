@@ -39,10 +39,10 @@ export default function TemplatesListPage() {
                 <Link to={`/templates/${template.id}`}>{template.name}</Link>
                 <p className="muted small">{template.description}</p>
               </td>
-              <td>
+              <td className="text-center">
                 <StatusBadge status={template.status} />
               </td>
-              <td>{template.updatedAt ? new Date(template.updatedAt).toLocaleString() : '—'}</td>
+              <td className="text-center">{template.updatedAt ? new Date(template.updatedAt).toLocaleString() : '—'}</td>
             </tr>
           ))}
         </tbody>
