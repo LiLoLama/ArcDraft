@@ -180,7 +180,7 @@ function ProposalComposerModal({ onClose }) {
   const selectedProducts = availableProducts.filter((product) => selectedProductIds.includes(product.id));
 
   const handleAddCustomProduct = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!customProductForm.name) return;
     const newProduct = {
       id: `custom-${Date.now()}`,
@@ -190,6 +190,7 @@ function ProposalComposerModal({ onClose }) {
       isCustom: true,
     };
     setCustomProducts((prev) => [...prev, newProduct]);
+    setSelectedProductIds((prev) => [...prev, newProduct.id]);
     setCustomProductForm({ name: '', description: '', price: '' });
   };
 
@@ -315,9 +316,12 @@ function ProposalComposerModal({ onClose }) {
                   <p className="muted">Nutze Standard-Optionen oder gespeicherte Kundenstile.</p>
                 </div>
               </div>
-              <label className="checkbox-row">
+              <label className="toggle-row">
                 <input type="checkbox" name="useCustomerStyle" checked={form.useCustomerStyle} onChange={handleChange} />
-                <span>Individuelle Kundensprache verwenden</span>
+                <span className="toggle-track">
+                  <span className="toggle-thumb" />
+                </span>
+                <span className="toggle-label">Individuelle Kundensprache verwenden</span>
               </label>
               {form.useCustomerStyle ? (
                 customerStyles.length ? (
@@ -470,7 +474,7 @@ function ProposalComposerModal({ onClose }) {
               <div className="custom-product">
                 <h5>Eigenes Produkt hinzufügen</h5>
                 <p className="muted">Perfekt für individuelle Pakete oder Add-ons – nur für dieses Proposal sichtbar.</p>
-                <form className="custom-product-form" onSubmit={handleAddCustomProduct}>
+                <div className="custom-product-form">
                   <label>
                     Produktname
                     <input name="name" value={customProductForm.name} onChange={handleCustomProductChange} placeholder="z. B. Discovery Call" />
@@ -483,10 +487,10 @@ function ProposalComposerModal({ onClose }) {
                     Preis
                     <input name="price" value={customProductForm.price} onChange={handleCustomProductChange} placeholder="z. B. €1.200" />
                   </label>
-                  <button type="submit" className="secondary">
+                  <button type="button" className="secondary" onClick={handleAddCustomProduct}>
                     Produkt anlegen
                   </button>
-                </form>
+                </div>
               </div>
             </section>
 
