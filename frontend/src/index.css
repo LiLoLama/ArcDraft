@@ -872,6 +872,7 @@ textarea {
   justify-content: space-between;
   gap: 1rem;
   width: 100%;
+  margin-bottom: 1rem;
 }
 
 .toggle-control {
