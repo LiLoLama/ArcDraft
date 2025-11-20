@@ -400,7 +400,7 @@ function ProposalComposerModal({ onClose }) {
                   <h4>Produkte & Leistungen</h4>
                   <p className="muted">Wähle, was in das Angebot aufgenommen werden soll.</p>
                 </div>
-                <span className="chip">{selectedProducts.length} ausgewählt</span>
+                <span className="chip success">{selectedProducts.length} ausgewählt</span>
               </div>
               {availableProducts.length > 0 ? (
                 <div className="product-grid">

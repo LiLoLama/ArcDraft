@@ -1,18 +1,33 @@
 import { useEffect, useState } from 'react';
-import { apiRequest } from '../api/client';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
+import useBrandingStore from '../store/brandingStore';
 
 export default function BrandingSettingsPage() {
   const token = useAuthStore((s) => s.token);
+  const logout = useAuthStore((s) => s.logout);
+  const branding = useBrandingStore((s) => s.branding);
+  const fetchBranding = useBrandingStore((s) => s.fetchBranding);
+  const saveBranding = useBrandingStore((s) => s.saveBranding);
+  const setBranding = useBrandingStore((s) => s.setBranding);
   const [form, setForm] = useState({ logoUrl: '', primaryColor: '#3EF0E7', accentColor: '#FF6A3D', fontFamily: 'Inter' });
+  const [saveState, setSaveState] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
 
   useEffect(() => {
     if (!token) return;
-    apiRequest('/api/settings/branding', { token }).then(setForm);
-  }, [token]);
+    fetchBranding(token).then((data) => {
+      if (data) setForm((prev) => ({ ...prev, ...data }));
+    });
+  }, [fetchBranding, token]);
+
+  useEffect(() => {
+    if (branding) {
+      setForm((prev) => ({ ...prev, ...branding }));
+    }
+  }, [branding]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -31,8 +46,28 @@ export default function BrandingSettingsPage() {
   };
 
   const handleSave = async () => {
-    const saved = await apiRequest('/api/settings/branding', { method: 'PUT', token, body: form });
-    setForm(saved);
+    if (!token) {
+      setSaveState('Fehlender Login');
+      return;
+    }
+    try {
+      setIsSaving(true);
+      setSaveState('');
+      const saved = await saveBranding(token, form);
+      setBranding(saved);
+      setForm((prev) => ({ ...prev, ...saved }));
+      setSaveState('Gespeichert');
+    } catch (e) {
+      const message = e.message || 'Fehler beim Speichern';
+      if (message.toLowerCase().includes('invalid token')) {
+        setSaveState('Session abgelaufen. Bitte erneut einloggen.');
+        logout();
+      } else {
+        setSaveState(message);
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleThemeChange = (e) => {
@@ -46,9 +81,12 @@ export default function BrandingSettingsPage() {
           <h1>Branding</h1>
           <p className="muted">Passe Branding und Darstellung deiner App zentral an.</p>
         </div>
-        <button className="primary" onClick={handleSave}>
-          Speichern
-        </button>
+        <div className="header-actions">
+          {saveState && <span className="muted">{saveState}</span>}
+          <button className="primary" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Speichert…' : 'Speichern'}
+          </button>
+        </div>
       </div>
       <section className="appearance-card">
         <div className="section-header">
