@@ -316,13 +316,20 @@ function ProposalComposerModal({ onClose }) {
                   <p className="muted">Nutze Standard-Optionen oder gespeicherte Kundenstile.</p>
                 </div>
               </div>
-              <label className="toggle-row">
-                <input type="checkbox" name="useCustomerStyle" checked={form.useCustomerStyle} onChange={handleChange} />
-                <span className="toggle-track">
-                  <span className="toggle-thumb" />
-                </span>
+              <div className="toggle-row">
                 <span className="toggle-label">Individuelle Kundensprache verwenden</span>
-              </label>
+                <label className="toggle-control">
+                  <input
+                    type="checkbox"
+                    name="useCustomerStyle"
+                    checked={form.useCustomerStyle}
+                    onChange={handleChange}
+                  />
+                  <span className="toggle-track">
+                    <span className="toggle-thumb" />
+                  </span>
+                </label>
+              </div>
               {form.useCustomerStyle ? (
                 customerStyles.length ? (
                   <div className="modal-grid">

@@ -867,6 +867,14 @@ textarea {
 }
 
 .toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.toggle-control {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
@@ -874,7 +882,7 @@ textarea {
   user-select: none;
 }
 
-.toggle-row input {
+.toggle-control input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -902,12 +910,12 @@ textarea {
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35);
 }
 
-.toggle-row input:checked + .toggle-track {
+.toggle-control input:checked + .toggle-track {
   background: rgba(255, 138, 101, 0.15);
   border-color: rgba(255, 138, 101, 0.5);
 }
 
-.toggle-row input:checked + .toggle-track .toggle-thumb {
+.toggle-control input:checked + .toggle-track .toggle-thumb {
   transform: translateX(22px);
 }
 
