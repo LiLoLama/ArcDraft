@@ -70,69 +70,71 @@ export default function CustomerStylesPage() {
               <p className="muted">{styles.length} Varianten</p>
             </div>
           </div>
-          {filteredStyles.length ? (
-            <div className="product-grid management">
-              {filteredStyles.map((style) => (
-                <article key={style.id} className="product-row">
-                  {editingId === style.id ? (
-                    <div className="product-edit-row">
-                      <div className="grid grid-2">
-                        <label>
-                          Name
-                          <input name="name" value={editForm.name} onChange={handleEditChange} />
-                        </label>
-                        <label>
-                          Sprache
-                          <select name="language" value={editForm.language} onChange={handleEditChange}>
-                            <option value="de">Deutsch</option>
-                            <option value="en">Englisch</option>
-                            <option value="fr">Französisch</option>
-                          </select>
-                        </label>
+          <div className="section-scroll">
+            {filteredStyles.length ? (
+              <div className="product-grid management">
+                {filteredStyles.map((style) => (
+                  <article key={style.id} className="product-row">
+                    {editingId === style.id ? (
+                      <div className="product-edit-row">
+                        <div className="grid grid-2">
+                          <label>
+                            Name
+                            <input name="name" value={editForm.name} onChange={handleEditChange} />
+                          </label>
+                          <label>
+                            Sprache
+                            <select name="language" value={editForm.language} onChange={handleEditChange}>
+                              <option value="de">Deutsch</option>
+                              <option value="en">Englisch</option>
+                              <option value="fr">Französisch</option>
+                            </select>
+                          </label>
+                        </div>
+                        <div className="grid grid-2">
+                          <label>
+                            Tonalität
+                            <input name="tone" value={editForm.tone} onChange={handleEditChange} />
+                          </label>
+                          <label>
+                            Beschreibung
+                            <input name="description" value={editForm.description} onChange={handleEditChange} />
+                          </label>
+                        </div>
+                        <div className="action-buttons">
+                          <button className="ghost-button" type="button" onClick={() => setEditingId(null)}>
+                            Abbrechen
+                          </button>
+                          <button className="primary" type="button" onClick={saveEdit}>
+                            Speichern
+                          </button>
+                        </div>
                       </div>
-                      <div className="grid grid-2">
-                        <label>
-                          Tonalität
-                          <input name="tone" value={editForm.tone} onChange={handleEditChange} />
-                        </label>
-                        <label>
-                          Beschreibung
-                          <input name="description" value={editForm.description} onChange={handleEditChange} />
-                        </label>
+                    ) : (
+                      <div className="product-row-content">
+                        <div>
+                          <strong>{style.name}</strong>
+                          <p className="muted">{style.description || 'Keine Beschreibung hinterlegt.'}</p>
+                          <p className="muted small">Ton: {style.tone || '—'}</p>
+                          <p className="muted small">Sprache: {style.language?.toUpperCase() || '—'}</p>
+                        </div>
+                        <div className="action-buttons">
+                          <button className="ghost-button" type="button" onClick={() => startEditing(style)}>
+                            Bearbeiten
+                          </button>
+                          <button className="ghost-button" type="button" onClick={() => removeStyle(style.id)}>
+                            Löschen
+                          </button>
+                        </div>
                       </div>
-                      <div className="action-buttons">
-                        <button className="ghost-button" type="button" onClick={() => setEditingId(null)}>
-                          Abbrechen
-                        </button>
-                        <button className="primary" type="button" onClick={saveEdit}>
-                          Speichern
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="product-row-content">
-                      <div>
-                        <div className="chip subtle">{style.language?.toUpperCase()}</div>
-                        <strong>{style.name}</strong>
-                        <p className="muted">{style.description || 'Keine Beschreibung hinterlegt.'}</p>
-                        <p className="muted small">Ton: {style.tone || '—'}</p>
-                      </div>
-                      <div className="action-buttons">
-                        <button className="ghost-button" type="button" onClick={() => startEditing(style)}>
-                          Bearbeiten
-                        </button>
-                        <button className="ghost-button" type="button" onClick={() => removeStyle(style.id)}>
-                          Löschen
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className="muted">Keine Stile gefunden.</p>
-          )}
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">Keine Stile gefunden.</p>
+            )}
+          </div>
         </section>
 
         <section className="section-card">

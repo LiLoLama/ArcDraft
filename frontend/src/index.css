@@ -150,6 +150,22 @@ textarea {
   gap: 0.6rem;
 }
 
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.user-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: var(--section-bg);
+  padding: 0.35rem;
+}
+
 .user-block {
   line-height: 1.4;
 }
@@ -701,6 +717,11 @@ textarea {
   font-weight: 600;
 }
 
+.chip.success {
+  background: rgba(46, 204, 113, 0.18);
+  color: #1f8a4c;
+}
+
 .chip.subtle {
   background: rgba(20, 33, 54, 0.08);
   color: #4b587c;
@@ -815,6 +836,15 @@ textarea {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 1.5rem;
+}
+
+.section-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.25rem;
 }
 
 .product-grid.management {
