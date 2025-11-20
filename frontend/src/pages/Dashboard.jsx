@@ -258,56 +258,59 @@ function ProposalComposerModal({ onClose }) {
         </div>
         {!result ? (
           <form className="modal-content" onSubmit={handleSubmit}>
-            {fieldGroups.map((group) => (
-              <section key={group.title} className="modal-section">
-                <div className="section-header">
-                  <div>
-                    <h4>{group.title}</h4>
-                    <p className="muted">{group.description}</p>
+            {fieldGroups.map((group) => {
+              const isProjectStory = group.title === 'Projektstory';
+              return (
+                <section key={group.title} className={`modal-section ${isProjectStory ? 'project-story-section' : ''}`}>
+                  <div className="section-header">
+                    <div>
+                      <h4>{group.title}</h4>
+                      <p className="muted">{group.description}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="modal-grid">
-                  {group.fields.map((field) => {
-                    const config = fieldConfig[field];
-                    if (config.type === 'select') {
+                  <div className={`modal-grid ${isProjectStory ? 'project-story-grid' : ''}`}>
+                    {group.fields.map((field) => {
+                      const config = fieldConfig[field];
+                      if (config.type === 'select') {
+                        return (
+                          <label key={field}>
+                            {config.label}
+                            <select name={field} value={form[field]} onChange={handleChange}>
+                              {config.options.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        );
+                      }
+                      if (field === 'projectDescription') {
+                        return (
+                          <label key={field} className="span-2">
+                            {config.label}
+                            <textarea name={field} value={form[field]} onChange={handleChange} placeholder={config.placeholder} required />
+                          </label>
+                        );
+                      }
                       return (
                         <label key={field}>
                           {config.label}
-                          <select name={field} value={form[field]} onChange={handleChange}>
-                            {config.options.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                          <input
+                            type={config.type || 'text'}
+                            name={field}
+                            value={form[field]}
+                            onChange={handleChange}
+                            placeholder={config.placeholder}
+                            required={field !== 'budgetRange'}
+                          />
                         </label>
                       );
-                    }
-                    if (field === 'projectDescription') {
-                      return (
-                        <label key={field} className="span-2">
-                          {config.label}
-                          <textarea name={field} value={form[field]} onChange={handleChange} placeholder={config.placeholder} required />
-                        </label>
-                      );
-                    }
-                    return (
-                      <label key={field}>
-                        {config.label}
-                        <input
-                          type={config.type || 'text'}
-                          name={field}
-                          value={form[field]}
-                          onChange={handleChange}
-                          placeholder={config.placeholder}
-                          required={field !== 'budgetRange'}
-                        />
-                      </label>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                    })}
+                  </div>
+                </section>
+              );
+            })}
 
             <section className="modal-section">
               <div className="section-header">

@@ -444,6 +444,12 @@ textarea {
 .badge-red { background: rgba(255, 99, 99, 0.25); color: #7d1f1f; }
 .badge-orange { background: rgba(255, 182, 89, 0.25); color: #7b3b0a; }
 
+[data-theme='dark'] .badge-green {
+  background: rgba(34, 173, 132, 0.35);
+  color: #9bf3d9;
+  border: 1px solid rgba(155, 243, 217, 0.6);
+}
+
 .badge-blue {
   background: rgba(6, 194, 140, 0.18);
   color: #0f684f;
@@ -558,16 +564,19 @@ textarea {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+  background: var(--body-gradient);
+  color: var(--text-color);
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.04);
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card-bg);
   padding: 2rem;
   border-radius: 20px;
   width: 360px;
   text-align: center;
   box-shadow: 0 25px 60px rgba(15, 23, 42, 0.12);
+  border: 1px solid var(--stroke);
+  color: var(--text-color);
 }
 
 .error-msg {
@@ -646,6 +655,11 @@ textarea {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 1rem;
+}
+
+.project-story-grid {
+  grid-auto-flow: row dense;
+  gap: 0.85rem;
 }
 
 .product-grid {
