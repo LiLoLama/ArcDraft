@@ -6,9 +6,12 @@ const emptyForm = { name: '', description: '', price: '' };
 export default function ProductsPage() {
   const products = useProductStore((s) => s.products);
   const addProduct = useProductStore((s) => s.addProduct);
+  const updateProduct = useProductStore((s) => s.updateProduct);
   const removeProduct = useProductStore((s) => s.removeProduct);
   const [form, setForm] = useState(emptyForm);
   const [search, setSearch] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(emptyForm);
 
   const filteredProducts = useMemo(() => {
     if (!search) return products;
@@ -23,6 +26,10 @@ export default function ProductsPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const handleEditChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name.trim()) {
@@ -34,6 +41,22 @@ export default function ProductsPage() {
       price: form.price.trim() || 'Preis auf Anfrage',
     });
     setForm(emptyForm);
+  };
+
+  const startEditing = (product) => {
+    setEditingId(product.id);
+    setEditForm({ name: product.name, description: product.description || '', price: product.price || '' });
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    updateProduct(editingId, {
+      name: editForm.name.trim(),
+      description: editForm.description.trim(),
+      price: editForm.price.trim() || 'Preis auf Anfrage',
+    });
+    setEditingId(null);
+    setEditForm(emptyForm);
   };
 
   return (
@@ -63,14 +86,46 @@ export default function ProductsPage() {
             <div className="product-grid management">
               {filteredProducts.map((product) => (
                 <article key={product.id} className="product-row">
-                  <div>
-                    <span className="price-pill">{product.price}</span>
-                    <strong>{product.name}</strong>
-                    <p className="muted">{product.description || 'Keine Beschreibung hinterlegt.'}</p>
-                  </div>
-                  <button className="ghost-button" type="button" onClick={() => removeProduct(product.id)}>
-                    Löschen
-                  </button>
+                  {editingId === product.id ? (
+                    <div className="product-edit-row">
+                      <label>
+                        Produktname
+                        <input name="name" value={editForm.name} onChange={handleEditChange} />
+                      </label>
+                      <label>
+                        Beschreibung
+                        <textarea name="description" value={editForm.description} onChange={handleEditChange} rows={3} />
+                      </label>
+                      <label>
+                        Preis
+                        <input name="price" value={editForm.price} onChange={handleEditChange} />
+                      </label>
+                      <div className="action-buttons">
+                        <button className="ghost-button" type="button" onClick={() => setEditingId(null)}>
+                          Abbrechen
+                        </button>
+                        <button className="primary" type="button" onClick={saveEdit}>
+                          Speichern
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="product-row-content">
+                      <div>
+                        <span className="price-pill">{product.price}</span>
+                        <strong>{product.name}</strong>
+                        <p className="muted">{product.description || 'Keine Beschreibung hinterlegt.'}</p>
+                      </div>
+                      <div className="action-buttons">
+                        <button className="ghost-button" type="button" onClick={() => startEditing(product)}>
+                          Bearbeiten
+                        </button>
+                        <button className="ghost-button" type="button" onClick={() => removeProduct(product.id)}>
+                          Löschen
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

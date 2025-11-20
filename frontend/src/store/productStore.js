@@ -67,6 +67,11 @@ const useProductStore = create((set, get) => ({
     set({ products: next });
     return id;
   },
+  updateProduct: (id, updates) => {
+    const next = get().products.map((product) => (product.id === id ? { ...product, ...updates } : product));
+    persistProducts(next);
+    set({ products: next });
+  },
   removeProduct: (id) => {
     const next = get().products.filter((product) => product.id !== id);
     persistProducts(next);

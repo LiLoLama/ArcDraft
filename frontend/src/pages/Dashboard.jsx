@@ -5,6 +5,7 @@ import useAuthStore from '../store/authStore';
 import { MetricCard } from '../components/MetricCard';
 import { StatusBadge } from '../components/StatusBadge';
 import useProductStore from '../store/productStore';
+import useCustomerStyleStore from '../store/customerStyleStore';
 
 const initialFormState = {
   clientName: '',
@@ -15,6 +16,8 @@ const initialFormState = {
   budgetRange: '',
   tone: 'freundlich',
   language: 'de',
+  useCustomerStyle: false,
+  customerStyleId: '',
 };
 
 const fieldConfig = {
@@ -49,7 +52,6 @@ const fieldConfig = {
 const fieldGroups = [
   { title: 'Kundendaten', description: 'Damit wir die Empfänger:innen persönlich ansprechen können.', fields: ['clientName', 'clientCompany', 'clientEmail'] },
   { title: 'Projektstory', description: 'Was ist das Ziel und warum ist es wichtig?', fields: ['projectTitle', 'projectDescription', 'budgetRange'] },
-  { title: 'Ton & Sprache', description: 'Wie sollen wir klingen?', fields: ['tone', 'language'] },
 ];
 
 export default function DashboardPage() {
@@ -116,15 +118,17 @@ export default function DashboardPage() {
 function ProposalComposerModal({ onClose }) {
   const token = useAuthStore((s) => s.token);
   const products = useProductStore((s) => s.products);
+  const customerStyles = useCustomerStyleStore((s) => s.styles);
   const [form, setForm] = useState(initialFormState);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [proposalProducts, setProposalProducts] = useState([]);
   const [customProducts, setCustomProducts] = useState([]);
   const [customProductForm, setCustomProductForm] = useState({ name: '', description: '', price: '' });
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [productDraft, setProductDraft] = useState({ name: '', description: '', price: '' });
   const [error, setError] = useState(null);
-
-  const getDefaultProductIds = () => products.slice(0, 2).map((product) => product.id);
 
   useEffect(() => {
     document.body.classList.add('no-scroll');
@@ -134,24 +138,45 @@ function ProposalComposerModal({ onClose }) {
   }, []);
 
   useEffect(() => {
-    if (products.length > 0 && selectedProductIds.length === 0) {
-      setSelectedProductIds(getDefaultProductIds());
-    }
-  }, [products, selectedProductIds.length]);
+    setProposalProducts(products.map((product) => ({ ...product })));
+  }, [products]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setForm({ ...form, [e.target.name]: value });
   };
 
   const handleCustomProductChange = (e) => {
     setCustomProductForm({ ...customProductForm, [e.target.name]: e.target.value });
   };
 
+  const handleDraftChange = (e) => {
+    setProductDraft({ ...productDraft, [e.target.name]: e.target.value });
+  };
+
   const toggleProduct = (id) => {
     setSelectedProductIds((prev) => (prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]));
   };
 
-  const availableProducts = [...products, ...customProducts];
+  useEffect(() => {
+    if (!form.useCustomerStyle && form.customerStyleId) {
+      setForm((prev) => ({ ...prev, customerStyleId: '' }));
+    }
+  }, [form.customerStyleId, form.useCustomerStyle]);
+
+  const handleCustomerStyleChange = (styleId) => {
+    const style = customerStyles.find((entry) => entry.id === styleId);
+    setForm((prev) => ({
+      ...prev,
+      customerStyleId: styleId,
+      tone: style?.tone || prev.tone,
+      language: style?.language || prev.language,
+    }));
+  };
+
+  const selectedStyle = customerStyles.find((style) => style.id === form.customerStyleId);
+
+  const availableProducts = [...proposalProducts, ...customProducts];
   const selectedProducts = availableProducts.filter((product) => selectedProductIds.includes(product.id));
 
   const handleAddCustomProduct = (e) => {
@@ -165,8 +190,24 @@ function ProposalComposerModal({ onClose }) {
       isCustom: true,
     };
     setCustomProducts((prev) => [...prev, newProduct]);
-    setSelectedProductIds((prev) => [...prev, newProduct.id]);
     setCustomProductForm({ name: '', description: '', price: '' });
+  };
+
+  const startEditingProduct = (product) => {
+    setEditingProductId(product.id);
+    setProductDraft({
+      name: product.name || '',
+      description: product.description || '',
+      price: product.price || '',
+    });
+  };
+
+  const saveProductDraft = () => {
+    if (!editingProductId) return;
+    setProposalProducts((prev) => prev.map((p) => (p.id === editingProductId ? { ...p, ...productDraft } : p)));
+    setCustomProducts((prev) => prev.map((p) => (p.id === editingProductId ? { ...p, ...productDraft } : p)));
+    setEditingProductId(null);
+    setProductDraft({ name: '', description: '', price: '' });
   };
 
   const handleSubmit = async (e) => {
@@ -174,15 +215,24 @@ function ProposalComposerModal({ onClose }) {
     setLoading(true);
     setError(null);
     try {
+      const selectedStyle = customerStyles.find((style) => style.id === form.customerStyleId);
+      const payloadBody = {
+        ...form,
+        tone: form.useCustomerStyle && selectedStyle ? selectedStyle.tone : form.tone,
+        language: form.useCustomerStyle && selectedStyle ? selectedStyle.language : form.language,
+        customerStyleId: form.useCustomerStyle ? form.customerStyleId : null,
+        products: selectedProducts,
+      };
       const payload = await apiRequest('/api/proposals/ai-generate', {
         method: 'POST',
-        body: { ...form, products: selectedProducts },
+        body: payloadBody,
         token,
       });
       setResult({ ...payload.proposal, selectedProducts });
       setForm(initialFormState);
       setCustomProducts([]);
-      setSelectedProductIds(getDefaultProductIds());
+      setSelectedProductIds([]);
+      setProposalProducts(products.map((product) => ({ ...product })));
     } catch (err) {
       setError(err.message || 'Etwas ist schiefgelaufen.');
     } finally {
@@ -261,6 +311,81 @@ function ProposalComposerModal({ onClose }) {
             <section className="modal-section">
               <div className="section-header">
                 <div>
+                  <h4>Ton & Sprache</h4>
+                  <p className="muted">Nutze Standard-Optionen oder gespeicherte Kundenstile.</p>
+                </div>
+              </div>
+              <label className="checkbox-row">
+                <input type="checkbox" name="useCustomerStyle" checked={form.useCustomerStyle} onChange={handleChange} />
+                <span>Individuelle Kundensprache verwenden</span>
+              </label>
+              {form.useCustomerStyle ? (
+                customerStyles.length ? (
+                  <div className="modal-grid">
+                    <label className="span-2">
+                      Kundensprache auswählen
+                      <select
+                        name="customerStyleId"
+                        value={form.customerStyleId}
+                        onChange={(e) => handleCustomerStyleChange(e.target.value)}
+                        required
+                      >
+                        <option value="">Bitte auswählen</option>
+                        {customerStyles.map((style) => (
+                          <option key={style.id} value={style.id}>
+                            {style.name} ({style.language?.toUpperCase()})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {selectedStyle ? (
+                      <div className="style-preview span-2">
+                        <p>
+                          <strong>Ton:</strong> {selectedStyle.tone || '—'}
+                        </p>
+                        <p className="muted">{selectedStyle.description || 'Kein Beschreibungstext hinterlegt.'}</p>
+                      </div>
+                    ) : (
+                      <p className="muted span-2">Wähle einen Stil, um Tonalität und Sprache zu übernehmen.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="product-empty-state">
+                    <p>Keine Kundenstile angelegt.</p>
+                    <Link to="/customer-styles" className="ghost-button small">
+                      Kundenstile öffnen
+                    </Link>
+                  </div>
+                )
+              ) : (
+                <div className="modal-grid">
+                  <label>
+                    {fieldConfig.tone.label}
+                    <select name="tone" value={form.tone} onChange={handleChange}>
+                      {fieldConfig.tone.options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    {fieldConfig.language.label}
+                    <select name="language" value={form.language} onChange={handleChange}>
+                      {fieldConfig.language.options.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+            </section>
+
+            <section className="modal-section">
+              <div className="section-header">
+                <div>
                   <h4>Produkte & Leistungen</h4>
                   <p className="muted">Wähle, was in das Angebot aufgenommen werden soll.</p>
                 </div>
@@ -268,19 +393,39 @@ function ProposalComposerModal({ onClose }) {
               </div>
               {availableProducts.length > 0 ? (
                 <div className="product-grid">
-                  {availableProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      className={`product-card ${selectedProductIds.includes(product.id) ? 'selected' : ''}`}
-                      onClick={() => toggleProduct(product.id)}
-                    >
-                      <span className="price-pill">{product.price}</span>
-                      <strong>{product.name}</strong>
-                      <p className="muted">{product.description || 'Individuelle Beschreibung folgt im Proposal.'}</p>
-                      {product.isCustom && <span className="chip subtle">Eigenes Produkt</span>}
-                    </button>
-                  ))}
+                  {availableProducts.map((product) => {
+                    const isSelected = selectedProductIds.includes(product.id);
+                    return (
+                      <div
+                        key={product.id}
+                        role="button"
+                        tabIndex={0}
+                        className={`product-card ${isSelected ? 'selected' : ''}`}
+                        onClick={() => toggleProduct(product.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && toggleProduct(product.id)}
+                      >
+                        <span className="price-pill">{product.price}</span>
+                        <strong>{product.name}</strong>
+                        <p className="muted">{product.description || 'Individuelle Beschreibung folgt im Proposal.'}</p>
+                        <div className="chip-row">
+                          {product.isCustom && <span className="chip subtle">Eigenes Produkt</span>}
+                          {editingProductId === product.id && <span className="chip subtle">In Bearbeitung</span>}
+                        </div>
+                        <div className="action-buttons inline">
+                          <button
+                            className="ghost-button small"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingProduct(product);
+                            }}
+                          >
+                            Für dieses Proposal anpassen
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="product-empty-state">
@@ -290,9 +435,41 @@ function ProposalComposerModal({ onClose }) {
                   </Link>
                 </div>
               )}
+              {editingProductId && (
+                <div className="product-edit-panel">
+                  <div className="section-header">
+                    <div>
+                      <h5>Produktdetails anpassen</h5>
+                      <p className="muted">Änderungen gelten nur für dieses Proposal.</p>
+                    </div>
+                  </div>
+                  <div className="modal-grid">
+                    <label>
+                      Produktname
+                      <input name="name" value={productDraft.name} onChange={handleDraftChange} />
+                    </label>
+                    <label>
+                      Preis
+                      <input name="price" value={productDraft.price} onChange={handleDraftChange} />
+                    </label>
+                    <label className="span-2">
+                      Beschreibung
+                      <textarea name="description" value={productDraft.description} onChange={handleDraftChange} rows={3} />
+                    </label>
+                  </div>
+                  <div className="action-buttons">
+                    <button type="button" className="ghost-button" onClick={() => setEditingProductId(null)}>
+                      Abbrechen
+                    </button>
+                    <button type="button" className="primary" onClick={saveProductDraft}>
+                      Änderungen übernehmen
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="custom-product">
                 <h5>Eigenes Produkt hinzufügen</h5>
-                <p className="muted">Perfekt für individuelle Pakete oder Add-ons.</p>
+                <p className="muted">Perfekt für individuelle Pakete oder Add-ons – nur für dieses Proposal sichtbar.</p>
                 <form className="custom-product-form" onSubmit={handleAddCustomProduct}>
                   <label>
                     Produktname

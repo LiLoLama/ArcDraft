@@ -11,6 +11,8 @@ import SecuritySettingsPage from './pages/SecuritySettings';
 import AutomationSettingsPage from './pages/AutomationSettings';
 import PublicProposalPage from './pages/PublicProposal';
 import ProductsPage from './pages/Products';
+import CustomerStylesPage from './pages/CustomerStyles';
+import ProfilePage from './pages/Profile';
 import { AppLayout } from './components/Layout';
 import useAuthStore from './store/authStore';
 
@@ -41,10 +43,12 @@ export default function App() {
           <Route path="proposals" element={<ProposalsListPage />} />
           <Route path="proposals/:id" element={<ProposalDetailPage />} />
           <Route path="proposals/:id/analytics" element={<ProposalAnalyticsPage />} />
+          <Route path="customer-styles" element={<CustomerStylesPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="settings/branding" element={<BrandingSettingsPage />} />
           <Route path="settings/security" element={<SecuritySettingsPage />} />
           <Route path="settings/automation" element={<AutomationSettingsPage />} />
+          <Route path="profile" element={<ProfilePage />} />
         </Route>
         <Route path="/p/:slug" element={<PublicProposalPage />} />
         <Route path="*" element={<Navigate to="/" />} />
