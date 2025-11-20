@@ -8,6 +8,7 @@ export default function BrandingSettingsPage() {
   const branding = useBrandingStore((s) => s.branding);
   const fetchBranding = useBrandingStore((s) => s.fetchBranding);
   const saveBranding = useBrandingStore((s) => s.saveBranding);
+  const setBranding = useBrandingStore((s) => s.setBranding);
   const [form, setForm] = useState({ logoUrl: '', primaryColor: '#3EF0E7', accentColor: '#FF6A3D', fontFamily: 'Inter' });
   const [saveState, setSaveState] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -44,15 +45,19 @@ export default function BrandingSettingsPage() {
   };
 
   const handleSave = async () => {
-    if (!token) return;
+    if (!token) {
+      setSaveState('Fehlender Login');
+      return;
+    }
     try {
       setIsSaving(true);
       setSaveState('');
       const saved = await saveBranding(token, form);
+      setBranding(saved);
       setForm((prev) => ({ ...prev, ...saved }));
       setSaveState('Gespeichert');
     } catch (e) {
-      setSaveState('Fehler beim Speichern');
+      setSaveState(e.message || 'Fehler beim Speichern');
     } finally {
       setIsSaving(false);
     }

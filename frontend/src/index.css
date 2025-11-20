@@ -747,6 +747,12 @@ textarea {
   gap: 0.75rem;
 }
 
+.product-row .action-buttons {
+  margin-left: auto;
+  justify-content: flex-end;
+  align-items: center;
+}
+
 .success-hero {
   text-align: center;
   padding: 1rem 0;
