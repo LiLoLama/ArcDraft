@@ -19,6 +19,7 @@ const {
   demoUserId,
   now,
   generatePublicSlug,
+  getUserById,
   getUserByEmail,
   addTemplate,
   updateTemplate,
@@ -27,6 +28,7 @@ const {
   updateProposal,
   addSignature,
   addAnalyticsEvent,
+  updateUser,
 } = require('./dataStore');
 const { authMiddleware } = require('./auth');
 const { emitIntegrationEvent } = require('./integrationEvents');
@@ -139,6 +141,30 @@ app.post('/api/auth/login', (req, res) => {
 
 app.get('/api/auth/me', authMiddleware, (req, res) => {
   res.json({ user: { id: req.user.id, email: req.user.email, name: req.user.name, companyName: req.user.companyName } });
+});
+
+app.get('/api/profile', authMiddleware, (req, res) => {
+  const user = getUserById(req.user.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  res.json({ user: { id: user.id, email: user.email, name: user.name, companyName: user.companyName } });
+});
+
+app.put('/api/profile', authMiddleware, (req, res) => {
+  const user = getUserById(req.user.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
+  const { name, companyName, email, currentPassword, newPassword } = req.body;
+  const updates = {};
+  if (name) updates.name = name;
+  if (companyName) updates.companyName = companyName;
+  if (email) updates.email = email;
+  if (newPassword) {
+    if (!currentPassword || !bcrypt.compareSync(currentPassword, user.passwordHash)) {
+      return res.status(400).json({ message: 'Aktuelles Passwort stimmt nicht.' });
+    }
+    updates.passwordHash = bcrypt.hashSync(newPassword, 10);
+  }
+  const updated = updateUser(user.id, updates);
+  res.json({ user: { id: updated.id, email: updated.email, name: updated.name, companyName: updated.companyName } });
 });
 
 // Template routes

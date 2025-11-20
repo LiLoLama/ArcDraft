@@ -5,6 +5,7 @@ const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/templates', label: 'Templates' },
   { to: '/proposals', label: 'Proposals' },
+  { to: '/customer-styles', label: 'Kundenstile' },
   { to: '/products', label: 'Products' },
   { to: '/settings/branding', label: 'Settings' },
 ];
@@ -28,6 +29,9 @@ export function AppLayout() {
             <div className="user-name">{user?.name}</div>
             <div className="user-company">{user?.companyName}</div>
           </div>
+          <NavLink to="/profile" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
+            Profil
+          </NavLink>
           <button className="ghost-button" onClick={logout}>
             Logout
           </button>

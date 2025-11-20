@@ -132,6 +132,13 @@ function getUserById(id) {
   return users.find((u) => u.id === id);
 }
 
+function updateUser(id, updates) {
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx === -1) return null;
+  users[idx] = { ...users[idx], ...updates };
+  return users[idx];
+}
+
 function addTemplate(template) {
   templates.push(template);
 }
@@ -191,4 +198,5 @@ module.exports = {
   updateProposal,
   addSignature,
   addAnalyticsEvent,
+  updateUser,
 };
