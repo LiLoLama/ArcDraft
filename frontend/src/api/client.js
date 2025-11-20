@@ -17,7 +17,12 @@ async function apiRequest(path, { method = 'GET', body, token, headers } = {}) {
   const res = await fetch(`${API_URL}${path}`, options);
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || 'Request failed');
+    try {
+      const parsed = JSON.parse(text || '{}');
+      throw new Error(parsed.message || 'Request failed');
+    } catch (err) {
+      throw new Error(text || 'Request failed');
+    }
   }
   const contentType = res.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {

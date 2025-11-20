@@ -729,8 +729,15 @@ textarea {
 }
 
 .chip.success {
-  background: rgba(0, 210, 160, 0.2);
-  color: #0a4f3c;
+  background: rgba(6, 194, 140, 0.18);
+  color: #0f684f;
+  border: 1px solid rgba(6, 194, 140, 0.35);
+}
+
+[data-theme='dark'] .chip.success {
+  background: rgba(34, 173, 132, 0.3);
+  color: #7ff3c7;
+  border-color: rgba(127, 243, 199, 0.55);
 }
 
 .modal-actions {
@@ -750,7 +757,9 @@ textarea {
 .product-row .action-buttons {
   margin-left: auto;
   justify-content: flex-end;
-  align-items: center;
+  align-items: flex-start;
+  text-align: right;
+  flex-wrap: wrap;
 }
 
 .success-hero {
@@ -857,6 +866,12 @@ textarea {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.product-row-content > div:first-child {
+  flex: 1;
 }
 
 .product-edit-row {

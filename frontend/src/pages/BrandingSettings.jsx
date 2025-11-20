@@ -5,6 +5,7 @@ import useBrandingStore from '../store/brandingStore';
 
 export default function BrandingSettingsPage() {
   const token = useAuthStore((s) => s.token);
+  const logout = useAuthStore((s) => s.logout);
   const branding = useBrandingStore((s) => s.branding);
   const fetchBranding = useBrandingStore((s) => s.fetchBranding);
   const saveBranding = useBrandingStore((s) => s.saveBranding);
@@ -57,7 +58,13 @@ export default function BrandingSettingsPage() {
       setForm((prev) => ({ ...prev, ...saved }));
       setSaveState('Gespeichert');
     } catch (e) {
-      setSaveState(e.message || 'Fehler beim Speichern');
+      const message = e.message || 'Fehler beim Speichern';
+      if (message.toLowerCase().includes('invalid token')) {
+        setSaveState('Session abgelaufen. Bitte erneut einloggen.');
+        logout();
+      } else {
+        setSaveState(message);
+      }
     } finally {
       setIsSaving(false);
     }
