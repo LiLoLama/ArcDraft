@@ -112,10 +112,10 @@ export default function CustomerStylesPage() {
                   ) : (
                     <div className="product-row-content">
                       <div>
-                        <div className="chip subtle">{style.language?.toUpperCase()}</div>
                         <strong>{style.name}</strong>
                         <p className="muted">{style.description || 'Keine Beschreibung hinterlegt.'}</p>
                         <p className="muted small">Ton: {style.tone || '—'}</p>
+                        <p className="muted small">Sprache: {style.language?.toUpperCase() || '—'}</p>
                       </div>
                       <div className="action-buttons">
                         <button className="ghost-button" type="button" onClick={() => startEditing(style)}>
