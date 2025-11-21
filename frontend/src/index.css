@@ -1055,6 +1055,16 @@ textarea {
   background: var(--section-bg);
 }
 
+.style-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.style-form-panel {
+  margin-top: 1rem;
+}
+
 .style-preview {
   border: 1px dashed var(--stroke);
   border-radius: 12px;

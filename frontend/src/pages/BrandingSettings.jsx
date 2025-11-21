@@ -23,6 +23,7 @@ export default function BrandingSettingsPage() {
   const removeStyle = useCustomerStyleStore((s) => s.removeStyle);
   const [styleForm, setStyleForm] = useState({ name: '', description: '', tone: '', language: 'de' });
   const [editingStyleId, setEditingStyleId] = useState(null);
+  const [showStyleForm, setShowStyleForm] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -98,11 +99,19 @@ export default function BrandingSettingsPage() {
       tone: style.tone || '',
       language: style.language || 'de',
     });
+    setShowStyleForm(true);
+  };
+
+  const startCreateStyle = () => {
+    setEditingStyleId(null);
+    setStyleForm({ name: '', description: '', tone: '', language: 'de' });
+    setShowStyleForm(true);
   };
 
   const resetStyleForm = () => {
     setEditingStyleId(null);
     setStyleForm({ name: '', description: '', tone: '', language: 'de' });
+    setShowStyleForm(false);
   };
 
   const saveStyle = (e) => {
@@ -223,40 +232,54 @@ export default function BrandingSettingsPage() {
           <p className="muted">Noch keine Standardstile angelegt.</p>
         )}
 
-        <form className="product-form" onSubmit={saveStyle}>
-          <div className="grid grid-2">
-            <label>
-              Name
-              <input name="name" value={styleForm.name} onChange={handleStyleChange} placeholder="z. B. Corporate DACH" required />
-            </label>
-            <label>
-              Sprache
-              <select name="language" value={styleForm.language} onChange={handleStyleChange}>
-                <option value="de">Deutsch</option>
-                <option value="en">Englisch</option>
-                <option value="fr">Französisch</option>
-              </select>
-            </label>
+        <div className="style-actions">
+          <button type="button" className="secondary" onClick={startCreateStyle}>
+            Neuen Standardstil erstellen
+          </button>
+        </div>
+
+        {(showStyleForm || editingStyleId) && (
+          <div className="product-edit-panel style-form-panel">
+            <form className="product-form" onSubmit={saveStyle}>
+              <div className="grid grid-2">
+                <label>
+                  Name
+                  <input
+                    name="name"
+                    value={styleForm.name}
+                    onChange={handleStyleChange}
+                    placeholder="z. B. Corporate DACH"
+                    required
+                  />
+                </label>
+                <label>
+                  Sprache
+                  <select name="language" value={styleForm.language} onChange={handleStyleChange}>
+                    <option value="de">Deutsch</option>
+                    <option value="en">Englisch</option>
+                    <option value="fr">Französisch</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                Tonalität
+                <input name="tone" value={styleForm.tone} onChange={handleStyleChange} placeholder="z. B. seriös, freundlich" />
+              </label>
+              <label>
+                Beschreibung
+                <textarea name="description" value={styleForm.description} onChange={handleStyleChange} rows={3} />
+              </label>
+              <div className="action-buttons">
+                <button type="button" className="ghost-button" onClick={resetStyleForm}>
+                  Abbrechen
+                </button>
+                <button className="primary" type="submit">
+                  {editingStyleId ? 'Stil aktualisieren' : 'Neuen Stil speichern'}
+                </button>
+              </div>
+            </form>
           </div>
-          <label>
-            Tonalität
-            <input name="tone" value={styleForm.tone} onChange={handleStyleChange} placeholder="z. B. seriös, freundlich" />
-          </label>
-          <label>
-            Beschreibung
-            <textarea name="description" value={styleForm.description} onChange={handleStyleChange} rows={3} />
-          </label>
-          <div className="action-buttons">
-            {editingStyleId && (
-              <button type="button" className="ghost-button" onClick={resetStyleForm}>
-                Abbrechen
-              </button>
-            )}
-            <button className="primary" type="submit">
-              {editingStyleId ? 'Stil aktualisieren' : 'Neuen Stil speichern'}
-            </button>
-          </div>
-        </form>
+        )}
       </section>
     </div>
   );

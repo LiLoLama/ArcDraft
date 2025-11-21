@@ -6,6 +6,7 @@ import { MetricCard } from '../components/MetricCard';
 import { StatusBadge } from '../components/StatusBadge';
 import useProductStore from '../store/productStore';
 import useCustomerStyleStore from '../store/customerStyleStore';
+import useCustomerStore from '../store/customerStore';
 
 const initialFormState = {
   clientName: '',
