@@ -10,7 +10,10 @@ const DEFAULT_CUSTOMERS = [
     email: 'alex.kunde@example.com',
     notes: 'Bevorzugt kurze Mails und wöchentliche Updates.',
     styleId: 'corporate-de',
-    useCustomerStyle: true,
+    useCustomerStyle: false,
+    styleLanguage: '',
+    styleTone: '',
+    styleDescription: '',
   },
   {
     id: 'customer-2',
@@ -19,12 +22,26 @@ const DEFAULT_CUSTOMERS = [
     email: 'jamie@seedstart.com',
     notes: 'Interessiert an klarer Roadmap und Pricing-Transparenz.',
     styleId: 'friendly-en',
-    useCustomerStyle: true,
+    useCustomerStyle: false,
+    styleLanguage: '',
+    styleTone: '',
+    styleDescription: '',
   },
 ];
 
 const normalizeCustomers = (list) =>
-  list.map((customer) => ({ ...customer, useCustomerStyle: customer.useCustomerStyle ?? Boolean(customer.styleId) }));
+  list.map((customer) => {
+    const hasCustomStyle = Boolean(customer.styleTone || customer.styleLanguage || customer.styleDescription);
+    const useCustomStyle = customer.useCustomerStyle && hasCustomStyle;
+    return {
+      ...customer,
+      styleLanguage: customer.styleLanguage || '',
+      styleTone: customer.styleTone || '',
+      styleDescription: customer.styleDescription || '',
+      useCustomerStyle: Boolean(useCustomStyle),
+      styleId: useCustomStyle ? '' : customer.styleId || '',
+    };
+  });
 
 const readStored = () => {
   if (typeof window === 'undefined') return null;
@@ -63,7 +80,11 @@ const useCustomerStore = create((set, get) => ({
     const nextCustomer = {
       ...customer,
       id,
-      useCustomerStyle: customer.useCustomerStyle ?? Boolean(customer.styleId),
+      styleLanguage: customer.styleLanguage || '',
+      styleTone: customer.styleTone || '',
+      styleDescription: customer.styleDescription || '',
+      useCustomerStyle: customer.useCustomerStyle ?? Boolean(customer.styleTone || customer.styleLanguage || customer.styleDescription),
+      styleId: customer.useCustomerStyle ? '' : customer.styleId || '',
     };
     const next = [...get().customers, nextCustomer];
     persist(next);
@@ -76,8 +97,17 @@ const useCustomerStore = create((set, get) => ({
         ? {
             ...customer,
             ...updates,
+            styleLanguage: updates.styleLanguage ?? customer.styleLanguage ?? '',
+            styleTone: updates.styleTone ?? customer.styleTone ?? '',
+            styleDescription: updates.styleDescription ?? customer.styleDescription ?? '',
             useCustomerStyle:
-              updates.useCustomerStyle ?? customer.useCustomerStyle ?? Boolean(updates.styleId ?? customer.styleId),
+              updates.useCustomerStyle ??
+              customer.useCustomerStyle ??
+              Boolean(updates.styleTone || updates.styleLanguage || updates.styleDescription),
+            styleId:
+              updates.useCustomerStyle || customer.useCustomerStyle
+                ? ''
+                : updates.styleId ?? customer.styleId ?? '',
           }
         : customer,
     );

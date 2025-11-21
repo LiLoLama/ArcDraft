@@ -2,7 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import useCustomerStore from '../store/customerStore';
 import useCustomerStyleStore from '../store/customerStyleStore';
 
-const emptyCustomer = { name: '', company: '', email: '', notes: '', styleId: '', useCustomerStyle: false };
+const emptyCustomer = {
+  name: '',
+  company: '',
+  email: '',
+  notes: '',
+  styleId: '',
+  useCustomerStyle: false,
+  styleLanguage: '',
+  styleTone: '',
+  styleDescription: '',
+};
 
 export default function CustomersPage() {
   const customers = useCustomerStore((s) => s.customers);
@@ -43,7 +53,10 @@ export default function CustomersPage() {
       email: customer.email || '',
       notes: customer.notes || '',
       styleId: customer.styleId || '',
-      useCustomerStyle: customer.useCustomerStyle ?? Boolean(customer.styleId),
+      useCustomerStyle: customer.useCustomerStyle ?? false,
+      styleLanguage: customer.styleLanguage || '',
+      styleTone: customer.styleTone || '',
+      styleDescription: customer.styleDescription || '',
     });
     setShowModal(true);
   };
@@ -54,8 +67,11 @@ export default function CustomersPage() {
     const payload = {
       ...form,
       name: form.name.trim(),
-      styleId: form.useCustomerStyle ? form.styleId : '',
+      styleId: form.useCustomerStyle ? '' : form.styleId,
       useCustomerStyle: form.useCustomerStyle,
+      styleLanguage: form.useCustomerStyle ? form.styleLanguage : '',
+      styleTone: form.useCustomerStyle ? form.styleTone : '',
+      styleDescription: form.useCustomerStyle ? form.styleDescription : '',
     };
     if (editingId) {
       updateCustomer(editingId, payload);
@@ -71,9 +87,16 @@ export default function CustomersPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const getStyleLabel = (styleId, useStyle) => {
-    if (!useStyle) return 'Kein Stil aktiv';
-    return styles.find((style) => style.id === styleId)?.name || 'Kein Stil hinterlegt';
+  const getStyleLabel = (customer) => {
+    if (customer.useCustomerStyle) {
+      const language = customer.styleLanguage ? customer.styleLanguage.toUpperCase() : '—';
+      const tone = customer.styleTone || 'Individueller Stil';
+      return `${tone} (${language})`;
+    }
+    if (customer.styleId) {
+      return styles.find((style) => style.id === customer.styleId)?.name || 'Kein Stil hinterlegt';
+    }
+    return 'Kein Stil aktiv';
   };
 
   return (
@@ -107,7 +130,7 @@ export default function CustomersPage() {
                   <p className="muted">{customer.company || 'Kein Unternehmen hinterlegt'}</p>
                   <p className="muted small">{customer.email || 'Keine E-Mail hinterlegt'}</p>
                   <div className="chip-row">
-                    <span className="chip subtle">Stil: {getStyleLabel(customer.styleId, customer.useCustomerStyle)}</span>
+                    <span className="chip subtle">Stil: {getStyleLabel(customer)}</span>
                   </div>
                   {customer.notes && <p className="muted small">Notizen: {customer.notes}</p>}
                 </div>
@@ -168,7 +191,11 @@ export default function CustomersPage() {
                       checked={form.useCustomerStyle}
                       onChange={(e) => {
                         const checked = e.target.checked;
-                        setForm((prev) => ({ ...prev, useCustomerStyle: checked, styleId: checked ? prev.styleId : '' }));
+                        setForm((prev) => ({
+                          ...prev,
+                          useCustomerStyle: checked,
+                          styleId: checked ? '' : prev.styleId,
+                        }));
                       }}
                     />
                     <span className="toggle-track">
@@ -176,9 +203,9 @@ export default function CustomersPage() {
                     </span>
                   </label>
                 </div>
-                {form.useCustomerStyle && (
+                {!form.useCustomerStyle && (
                   <label>
-                    Zugeordneter Stil
+                    Zugeordneter Standardstil
                     <select name="styleId" value={form.styleId} onChange={handleChange}>
                       <option value="">Kein Stil</option>
                       {styles.map((style) => (
@@ -188,6 +215,37 @@ export default function CustomersPage() {
                       ))}
                     </select>
                   </label>
+                )}
+                {form.useCustomerStyle && (
+                  <>
+                    <label>
+                      Sprache
+                      <select name="styleLanguage" value={form.styleLanguage} onChange={handleChange}>
+                        <option value="">Auswählen</option>
+                        <option value="de">Deutsch</option>
+                        <option value="en">Englisch</option>
+                      </select>
+                    </label>
+                    <label>
+                      Tonalität
+                      <input
+                        name="styleTone"
+                        value={form.styleTone}
+                        onChange={handleChange}
+                        placeholder="z. B. freundlich, formal"
+                      />
+                    </label>
+                    <label className="span-2">
+                      Beschreibung
+                      <textarea
+                        name="styleDescription"
+                        value={form.styleDescription}
+                        onChange={handleChange}
+                        rows={3}
+                        placeholder="Beschreibe den individuellen Stil"
+                      />
+                    </label>
+                  </>
                 )}
                 <label className="span-2">
                   Notizen

@@ -184,7 +184,7 @@ function ProposalComposerModal({ onClose }) {
 
   useEffect(() => {
     if (customerMode === 'existing' && selectedCustomer) {
-      const styleId = selectedCustomer.useCustomerStyle === false ? '' : selectedCustomer.styleId;
+      const styleId = selectedCustomer.useCustomerStyle ? '' : selectedCustomer.styleId;
       const style = customerStyles.find((entry) => entry.id === styleId);
       setForm((prev) => ({
         ...prev,
@@ -192,9 +192,13 @@ function ProposalComposerModal({ onClose }) {
         clientCompany: selectedCustomer.company || prev.clientCompany,
         clientEmail: selectedCustomer.email || prev.clientEmail,
         customerStyleId: styleId || '',
-        useCustomerStyle: Boolean(styleId),
-        tone: style?.tone || prev.tone,
-        language: style?.language || prev.language,
+        useCustomerStyle: selectedCustomer.useCustomerStyle,
+        tone: selectedCustomer.useCustomerStyle
+          ? selectedCustomer.styleTone || prev.tone
+          : style?.tone || prev.tone,
+        language: selectedCustomer.useCustomerStyle
+          ? selectedCustomer.styleLanguage || prev.language
+          : style?.language || prev.language,
       }));
     }
     if (customerMode === 'new') {
@@ -205,7 +209,7 @@ function ProposalComposerModal({ onClose }) {
         clientCompany: newCustomer.company || prev.clientCompany,
         clientEmail: newCustomer.email || prev.clientEmail,
         customerStyleId: newCustomer.styleId || '',
-        useCustomerStyle: Boolean(newCustomer.styleId),
+        useCustomerStyle: false,
         tone: style?.tone || prev.tone,
         language: style?.language || prev.language,
       }));
@@ -241,7 +245,7 @@ function ProposalComposerModal({ onClose }) {
     setForm((prev) => ({
       ...prev,
       customerStyleId: styleId,
-      useCustomerStyle: Boolean(styleId),
+      useCustomerStyle: false,
       tone: style?.tone || prev.tone,
       language: style?.language || prev.language,
     }));
@@ -309,7 +313,7 @@ function ProposalComposerModal({ onClose }) {
           company: newCustomer.company || form.clientCompany,
           email: newCustomer.email || form.clientEmail,
           styleId: form.customerStyleId || newCustomer.styleId,
-          useCustomerStyle: Boolean(form.customerStyleId || newCustomer.styleId),
+          useCustomerStyle: false,
           notes: 'Automatisch beim Proposal angelegt.',
         });
         customerId = createdId;
