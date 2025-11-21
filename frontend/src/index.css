@@ -654,15 +654,16 @@ textarea {
   padding: var(--space-xl) var(--space-xl) var(--space-lg);
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: var(--space-lg);
   border-bottom: 1px solid var(--stroke);
 }
 
 .modal-content {
-  padding: var(--space-lg) var(--space-xl) var(--space-xl);
+  padding: var(--space-xl);
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-xl);
   flex: 1 1 auto;
   overflow-y: auto;
 }
@@ -672,6 +673,9 @@ textarea {
   border-radius: 22px;
   padding: var(--space-lg);
   border: 1px solid var(--stroke);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
 }
 
 .section-header {
@@ -679,12 +683,11 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  margin-bottom: var(--space-md);
 }
 
 .modal-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--space-md);
 }
 
@@ -701,17 +704,17 @@ textarea {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .product-card {
   border: 1.5px solid var(--stroke);
   border-radius: 18px;
-  padding: var(--space-md);
+  padding: var(--space-lg);
   background: var(--card-bg);
   display: flex;
   flex-direction: column;
-  gap: var(--space-sm);
+  gap: var(--space-md);
   text-align: left;
   cursor: pointer;
   color: var(--text-color);
@@ -768,9 +771,9 @@ textarea {
 
 .custom-product-form {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--space-sm);
-  margin-top: var(--space-sm);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-md);
 }
 
 .custom-product-form button {
@@ -811,11 +814,13 @@ textarea {
   gap: var(--space-md);
   border-top: 1px solid var(--stroke);
   padding-top: var(--space-md);
+  padding-bottom: var(--space-sm);
 }
 
 .action-buttons {
   display: flex;
-  gap: var(--space-sm);
+  gap: var(--space-md);
+  flex-wrap: wrap;
 }
 
 .product-row .action-buttons {
@@ -828,7 +833,10 @@ textarea {
 
 .success-hero {
   text-align: center;
-  padding: var(--space-md) 0;
+  padding: var(--space-lg) 0 var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
 }
 
 .success-list {
