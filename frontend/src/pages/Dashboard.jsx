@@ -174,10 +174,15 @@ function ProposalComposerModal({ onClose }) {
     if (!selectedTemplate) return;
     setForm((prev) => ({
       ...prev,
-      projectTitle: selectedTemplate.name || prev.projectTitle,
-      projectDescription: selectedTemplate.description || prev.projectDescription,
+      projectTitle: selectedTemplate.projectTitle || selectedTemplate.name || prev.projectTitle,
+      projectDescription:
+        selectedTemplate.projectDescription || selectedTemplate.description || prev.projectDescription,
+      tone: selectedTemplate.tone || prev.tone,
+      language: selectedTemplate.language || prev.language,
       templateId: selectedTemplate.id,
     }));
+    setSelectedProductIds(selectedTemplate.productIds || []);
+    setCustomProducts(selectedTemplate.customProducts || []);
   }, [selectedTemplate]);
 
   const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId);
@@ -417,7 +422,10 @@ function ProposalComposerModal({ onClose }) {
                           <p>
                             <strong>Beschreibung:</strong> {selectedTemplate.description || 'Keine Beschreibung hinterlegt.'}
                           </p>
-                          <p className="muted small">Variablen: {selectedTemplate.variablesSchema?.length || 0}</p>
+                          <p className="muted small">
+                            Ton: {selectedTemplate.tone || '—'} · Sprache: {selectedTemplate.language?.toUpperCase() || '—'} ·
+                            Produkte: {selectedTemplate.productIds?.length || 0}
+                          </p>
                         </div>
                       )}
                     </div>

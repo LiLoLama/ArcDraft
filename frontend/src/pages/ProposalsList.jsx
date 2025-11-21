@@ -26,13 +26,14 @@ export default function ProposalsListPage() {
           <option value="">Alle</option>
           <option value="draft">Draft</option>
           <option value="sent">Sent</option>
-          <option value="signed">Signed</option>
+          <option value="signiert">Signiert</option>
         </select>
       </div>
       <table className="data-table">
         <thead>
           <tr>
             <th>Title</th>
+            <th className="text-center">Erstellt am</th>
             <th className="text-center">Kunde</th>
             <th className="text-center">Status</th>
             <th className="text-center">Views</th>
@@ -45,6 +46,7 @@ export default function ProposalsListPage() {
               <td>
                 <Link to={`/proposals/${proposal.id}`}>{proposal.title}</Link>
               </td>
+              <td className="text-center">{proposal.createdAt ? new Date(proposal.createdAt).toLocaleDateString() : '—'}</td>
               <td className="text-center">{proposal.recipient?.name}</td>
               <td className="text-center">
                 <StatusBadge status={proposal.status} />
