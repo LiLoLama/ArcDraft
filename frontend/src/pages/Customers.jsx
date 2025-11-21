@@ -242,37 +242,41 @@ export default function CustomersPage() {
                         <option value="en">Englisch</option>
                       </select>
                     </label>
-                    <label>
-                      Tonalität
-                      <input
-                        name="styleTone"
-                        value={form.styleTone}
-                        onChange={handleChange}
-                        placeholder="z. B. freundlich, formal"
-                      />
-                    </label>
-                    <label className="span-2">
-                      Beschreibung
-                      <textarea
-                        name="styleDescription"
-                        value={form.styleDescription}
-                        onChange={handleChange}
-                        className="auto-resize"
-                        placeholder="Beschreibe den individuellen Stil"
-                      />
-                    </label>
+                    <div className="span-2 tone-stack">
+                      <label>
+                        Tonalität
+                        <input
+                          name="styleTone"
+                          value={form.styleTone}
+                          onChange={handleChange}
+                          placeholder="z. B. freundlich, formal"
+                        />
+                      </label>
+                      <label>
+                        Beschreibung
+                        <textarea
+                          name="styleDescription"
+                          value={form.styleDescription}
+                          onChange={handleChange}
+                          className="auto-resize"
+                          placeholder="Beschreibe den individuellen Stil"
+                        />
+                      </label>
+                    </div>
                   </>
                 )}
-                <label className="span-2">
-                  Notizen
-                  <textarea
-                    name="notes"
-                    value={form.notes}
-                    onChange={handleChange}
-                    className="auto-resize"
-                    placeholder="Präferenzen, Besonderheiten"
-                  />
-                </label>
+                <div className="span-2 tone-stack">
+                  <label>
+                    Notizen
+                    <textarea
+                      name="notes"
+                      value={form.notes}
+                      onChange={handleChange}
+                      className="auto-resize"
+                      placeholder="Präferenzen, Besonderheiten"
+                    />
+                  </label>
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="ghost-button" onClick={() => setShowModal(false)}>
