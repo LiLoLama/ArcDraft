@@ -13,7 +13,6 @@ const initialFormState = {
   clientEmail: '',
   projectTitle: '',
   projectDescription: '',
-  budgetRange: '',
   tone: 'freundlich',
   language: 'de',
   useCustomerStyle: false,
@@ -29,7 +28,6 @@ const fieldConfig = {
     label: 'Projektbeschreibung',
     placeholder: 'Was soll mit dem Proposal erreicht werden?',
   },
-  budgetRange: { label: 'Budgetrahmen (optional)', placeholder: 'z. B. 20.000 – 30.000 €' },
   tone: {
     label: 'Ton der Kommunikation',
     type: 'select',
@@ -51,7 +49,7 @@ const fieldConfig = {
 
 const fieldGroups = [
   { title: 'Kundendaten', description: 'Damit wir die Empfänger:innen persönlich ansprechen können.', fields: ['clientName', 'clientCompany', 'clientEmail'] },
-  { title: 'Projektstory', description: 'Was ist das Ziel und warum ist es wichtig?', fields: ['projectTitle', 'projectDescription', 'budgetRange'] },
+  { title: 'Projektstory', description: 'Was ist das Ziel und warum ist es wichtig?', fields: ['projectTitle', 'projectDescription'] },
 ];
 
 export default function DashboardPage() {
@@ -302,7 +300,7 @@ function ProposalComposerModal({ onClose }) {
                             value={form[field]}
                             onChange={handleChange}
                             placeholder={config.placeholder}
-                            required={field !== 'budgetRange'}
+                            required
                           />
                         </label>
                       );
