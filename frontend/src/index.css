@@ -419,6 +419,12 @@ textarea {
   min-height: 130px;
 }
 
+.auto-resize {
+  resize: none;
+  overflow: hidden;
+  min-height: 110px;
+}
+
 .span-2 {
   grid-column: span 2;
 }

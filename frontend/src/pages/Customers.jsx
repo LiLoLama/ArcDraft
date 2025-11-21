@@ -83,9 +83,25 @@ export default function CustomersPage() {
     setForm(emptyCustomer);
   };
 
+  const autoResizeTextarea = (target) => {
+    if (!target) return;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+  };
+
   const handleChange = (e) => {
+    if (e.target.tagName === 'TEXTAREA') {
+      autoResizeTextarea(e.target);
+    }
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  useEffect(() => {
+    if (!showModal) return;
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.modal textarea.auto-resize').forEach(autoResizeTextarea);
+    });
+  }, [showModal, form.styleDescription, form.notes, form.useCustomerStyle]);
 
   const getStyleLabel = (customer) => {
     if (customer.useCustomerStyle) {
@@ -241,7 +257,7 @@ export default function CustomersPage() {
                         name="styleDescription"
                         value={form.styleDescription}
                         onChange={handleChange}
-                        rows={3}
+                        className="auto-resize"
                         placeholder="Beschreibe den individuellen Stil"
                       />
                     </label>
@@ -249,7 +265,13 @@ export default function CustomersPage() {
                 )}
                 <label className="span-2">
                   Notizen
-                  <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} placeholder="Präferenzen, Besonderheiten" />
+                  <textarea
+                    name="notes"
+                    value={form.notes}
+                    onChange={handleChange}
+                    className="auto-resize"
+                    placeholder="Präferenzen, Besonderheiten"
+                  />
                 </label>
               </div>
               <div className="modal-actions">
