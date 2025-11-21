@@ -83,9 +83,25 @@ export default function CustomersPage() {
     setForm(emptyCustomer);
   };
 
+  const autoResizeTextarea = (target) => {
+    if (!target) return;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+  };
+
   const handleChange = (e) => {
+    if (e.target.tagName === 'TEXTAREA') {
+      autoResizeTextarea(e.target);
+    }
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  useEffect(() => {
+    if (!showModal) return;
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.modal textarea.auto-resize').forEach(autoResizeTextarea);
+    });
+  }, [showModal, form.styleDescription, form.notes, form.useCustomerStyle]);
 
   const getStyleLabel = (customer) => {
     if (customer.useCustomerStyle) {
@@ -226,31 +242,41 @@ export default function CustomersPage() {
                         <option value="en">Englisch</option>
                       </select>
                     </label>
-                    <label>
-                      Tonalität
-                      <input
-                        name="styleTone"
-                        value={form.styleTone}
-                        onChange={handleChange}
-                        placeholder="z. B. freundlich, formal"
-                      />
-                    </label>
-                    <label className="span-2">
-                      Beschreibung
-                      <textarea
-                        name="styleDescription"
-                        value={form.styleDescription}
-                        onChange={handleChange}
-                        rows={3}
-                        placeholder="Beschreibe den individuellen Stil"
-                      />
-                    </label>
+                    <div className="span-2 tone-stack">
+                      <label>
+                        Tonalität
+                        <input
+                          name="styleTone"
+                          value={form.styleTone}
+                          onChange={handleChange}
+                          placeholder="z. B. freundlich, formal"
+                        />
+                      </label>
+                      <label>
+                        Beschreibung
+                        <textarea
+                          name="styleDescription"
+                          value={form.styleDescription}
+                          onChange={handleChange}
+                          className="auto-resize"
+                          placeholder="Beschreibe den individuellen Stil"
+                        />
+                      </label>
+                    </div>
                   </>
                 )}
-                <label className="span-2">
-                  Notizen
-                  <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} placeholder="Präferenzen, Besonderheiten" />
-                </label>
+                <div className="span-2 tone-stack">
+                  <label>
+                    Notizen
+                    <textarea
+                      name="notes"
+                      value={form.notes}
+                      onChange={handleChange}
+                      className="auto-resize"
+                      placeholder="Präferenzen, Besonderheiten"
+                    />
+                  </label>
+                </div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="ghost-button" onClick={() => setShowModal(false)}>

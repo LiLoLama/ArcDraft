@@ -33,10 +33,10 @@ export default function ProposalsListPage() {
         <thead>
           <tr>
             <th>Title</th>
-            <th>Kunde</th>
-            <th>Status</th>
-            <th>Views</th>
-            <th>Signiert</th>
+            <th className="text-center">Kunde</th>
+            <th className="text-center">Status</th>
+            <th className="text-center">Views</th>
+            <th className="text-center">Signiert</th>
           </tr>
         </thead>
         <tbody>
@@ -45,12 +45,12 @@ export default function ProposalsListPage() {
               <td>
                 <Link to={`/proposals/${proposal.id}`}>{proposal.title}</Link>
               </td>
-              <td>{proposal.recipient?.name}</td>
-              <td>
+              <td className="text-center">{proposal.recipient?.name}</td>
+              <td className="text-center">
                 <StatusBadge status={proposal.status} />
               </td>
-              <td>{proposal.viewedAt ? 'Viewed' : '—'}</td>
-              <td>{proposal.signedAt ? new Date(proposal.signedAt).toLocaleDateString() : '—'}</td>
+              <td className="text-center">{proposal.viewedAt ? 'Viewed' : '—'}</td>
+              <td className="text-center">{proposal.signedAt ? new Date(proposal.signedAt).toLocaleDateString() : '—'}</td>
             </tr>
           ))}
         </tbody>
