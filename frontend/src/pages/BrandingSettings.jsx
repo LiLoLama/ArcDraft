@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import useAuthStore from '../store/authStore';
 import useThemeStore from '../store/themeStore';
 import useBrandingStore from '../store/brandingStore';
+import useCustomerStyleStore from '../store/customerStyleStore';
 
 export default function BrandingSettingsPage() {
   const token = useAuthStore((s) => s.token);
@@ -15,6 +16,13 @@ export default function BrandingSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const theme = useThemeStore((s) => s.theme);
   const setTheme = useThemeStore((s) => s.setTheme);
+  const styles = useCustomerStyleStore((s) => s.styles);
+  const initializeStyles = useCustomerStyleStore((s) => s.initializeStyles);
+  const addStyle = useCustomerStyleStore((s) => s.addStyle);
+  const updateStyle = useCustomerStyleStore((s) => s.updateStyle);
+  const removeStyle = useCustomerStyleStore((s) => s.removeStyle);
+  const [styleForm, setStyleForm] = useState({ name: '', description: '', tone: '', language: 'de' });
+  const [editingStyleId, setEditingStyleId] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -22,6 +30,10 @@ export default function BrandingSettingsPage() {
       if (data) setForm((prev) => ({ ...prev, ...data }));
     });
   }, [fetchBranding, token]);
+
+  useEffect(() => {
+    initializeStyles();
+  }, [initializeStyles]);
 
   useEffect(() => {
     if (branding) {
@@ -72,6 +84,36 @@ export default function BrandingSettingsPage() {
 
   const handleThemeChange = (e) => {
     setTheme(e.target.value);
+  };
+
+  const handleStyleChange = (e) => {
+    setStyleForm({ ...styleForm, [e.target.name]: e.target.value });
+  };
+
+  const startEditStyle = (style) => {
+    setEditingStyleId(style.id);
+    setStyleForm({
+      name: style.name || '',
+      description: style.description || '',
+      tone: style.tone || '',
+      language: style.language || 'de',
+    });
+  };
+
+  const resetStyleForm = () => {
+    setEditingStyleId(null);
+    setStyleForm({ name: '', description: '', tone: '', language: 'de' });
+  };
+
+  const saveStyle = (e) => {
+    e.preventDefault();
+    if (!styleForm.name.trim()) return;
+    if (editingStyleId) {
+      updateStyle(editingStyleId, { ...styleForm, name: styleForm.name.trim() });
+    } else {
+      addStyle({ ...styleForm, name: styleForm.name.trim() });
+    }
+    resetStyleForm();
   };
 
   return (
@@ -145,6 +187,77 @@ export default function BrandingSettingsPage() {
           <input name="fontFamily" value={form.fontFamily || ''} onChange={handleChange} />
         </label>
       </div>
+
+      <section className="section-card">
+        <div className="section-header">
+          <div>
+            <p className="tagline">Kommunikationsleitplanken</p>
+            <h2>Standardstile</h2>
+            <p className="muted">Verwalte zentrale Tone-of-Voice Presets, die du Kunden und Templates zuordnen kannst.</p>
+          </div>
+        </div>
+        {styles.length ? (
+          <div className="product-grid management">
+            {styles.map((style) => (
+              <article key={style.id} className="product-row">
+                <div className="product-row-content">
+                  <div>
+                    <strong>{style.name}</strong>
+                    <p className="muted">{style.description || 'Keine Beschreibung hinterlegt.'}</p>
+                    <p className="muted small">Ton: {style.tone || '—'}</p>
+                    <p className="muted small">Sprache: {style.language?.toUpperCase() || '—'}</p>
+                  </div>
+                  <div className="action-buttons">
+                    <button type="button" className="ghost-button" onClick={() => startEditStyle(style)}>
+                      Bearbeiten
+                    </button>
+                    <button type="button" className="ghost-button" onClick={() => removeStyle(style.id)}>
+                      Löschen
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">Noch keine Standardstile angelegt.</p>
+        )}
+
+        <form className="product-form" onSubmit={saveStyle}>
+          <div className="grid grid-2">
+            <label>
+              Name
+              <input name="name" value={styleForm.name} onChange={handleStyleChange} placeholder="z. B. Corporate DACH" required />
+            </label>
+            <label>
+              Sprache
+              <select name="language" value={styleForm.language} onChange={handleStyleChange}>
+                <option value="de">Deutsch</option>
+                <option value="en">Englisch</option>
+                <option value="fr">Französisch</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            Tonalität
+            <input name="tone" value={styleForm.tone} onChange={handleStyleChange} placeholder="z. B. seriös, freundlich" />
+          </label>
+          <label>
+            Beschreibung
+            <textarea name="description" value={styleForm.description} onChange={handleStyleChange} rows={3} />
+          </label>
+          <div className="action-buttons">
+            {editingStyleId && (
+              <button type="button" className="ghost-button" onClick={resetStyleForm}>
+                Abbrechen
+              </button>
+            )}
+            <button className="primary" type="submit">
+              {editingStyleId ? 'Stil aktualisieren' : 'Neuen Stil speichern'}
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }

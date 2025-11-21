@@ -117,7 +117,19 @@ function ProposalComposerModal({ onClose }) {
   const token = useAuthStore((s) => s.token);
   const products = useProductStore((s) => s.products);
   const customerStyles = useCustomerStyleStore((s) => s.styles);
+  const initializeStyles = useCustomerStyleStore((s) => s.initializeStyles);
+  const customers = useCustomerStore((s) => s.customers);
+  const initializeCustomers = useCustomerStore((s) => s.initialize);
+  const addCustomer = useCustomerStore((s) => s.addCustomer);
+
   const [form, setForm] = useState(initialFormState);
+  const [startMode, setStartMode] = useState('');
+  const [customerMode, setCustomerMode] = useState('existing');
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [newCustomer, setNewCustomer] = useState({ name: '', company: '', email: '', styleId: '' });
+  const [templates, setTemplates] = useState([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
@@ -130,18 +142,95 @@ function ProposalComposerModal({ onClose }) {
 
   useEffect(() => {
     document.body.classList.add('no-scroll');
+    initializeStyles();
+    initializeCustomers();
     return () => {
       document.body.classList.remove('no-scroll');
     };
-  }, []);
+  }, [initializeCustomers, initializeStyles]);
 
   useEffect(() => {
     setProposalProducts(products.map((product) => ({ ...product })));
   }, [products]);
 
+  useEffect(() => {
+    if (!token || startMode !== 'template') return;
+    setTemplatesLoading(true);
+    apiRequest('/api/templates', { token })
+      .then(setTemplates)
+      .finally(() => setTemplatesLoading(false));
+  }, [startMode, token]);
+
+  useEffect(() => {
+    if (!startMode) return;
+    setForm((prev) => ({ ...prev, startMode }));
+  }, [startMode]);
+
+  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
+
+  useEffect(() => {
+    if (!selectedTemplate) return;
+    setForm((prev) => ({
+      ...prev,
+      projectTitle: selectedTemplate.name || prev.projectTitle,
+      projectDescription: selectedTemplate.description || prev.projectDescription,
+      templateId: selectedTemplate.id,
+    }));
+  }, [selectedTemplate]);
+
+  const selectedCustomer = customers.find((customer) => customer.id === selectedCustomerId);
+
+  useEffect(() => {
+    if (customerMode === 'existing' && selectedCustomer) {
+      const style = customerStyles.find((entry) => entry.id === selectedCustomer.styleId);
+      setForm((prev) => ({
+        ...prev,
+        clientName: selectedCustomer.name || prev.clientName,
+        clientCompany: selectedCustomer.company || prev.clientCompany,
+        clientEmail: selectedCustomer.email || prev.clientEmail,
+        customerStyleId: selectedCustomer.styleId || '',
+        useCustomerStyle: Boolean(selectedCustomer.styleId),
+        tone: style?.tone || prev.tone,
+        language: style?.language || prev.language,
+      }));
+    }
+    if (customerMode === 'new') {
+      const style = customerStyles.find((entry) => entry.id === newCustomer.styleId);
+      setForm((prev) => ({
+        ...prev,
+        clientName: newCustomer.name || prev.clientName,
+        clientCompany: newCustomer.company || prev.clientCompany,
+        clientEmail: newCustomer.email || prev.clientEmail,
+        customerStyleId: newCustomer.styleId || '',
+        useCustomerStyle: Boolean(newCustomer.styleId),
+        tone: style?.tone || prev.tone,
+        language: style?.language || prev.language,
+      }));
+    }
+  }, [customerMode, customerStyles, newCustomer, selectedCustomer]);
+
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setForm({ ...form, [e.target.name]: value });
+  };
+
+  const handleNewCustomerChange = (e) => {
+    const value = e.target.value;
+    setNewCustomer({ ...newCustomer, [e.target.name]: value });
+  };
+
+  const handleStyleSelect = (styleId) => {
+    const style = customerStyles.find((entry) => entry.id === styleId);
+    setForm((prev) => ({
+      ...prev,
+      customerStyleId: styleId,
+      useCustomerStyle: Boolean(styleId),
+      tone: style?.tone || prev.tone,
+      language: style?.language || prev.language,
+    }));
+    if (customerMode === 'new') {
+      setNewCustomer((prev) => ({ ...prev, styleId }));
+    }
   };
 
   const handleCustomProductChange = (e) => {
@@ -155,24 +244,6 @@ function ProposalComposerModal({ onClose }) {
   const toggleProduct = (id) => {
     setSelectedProductIds((prev) => (prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]));
   };
-
-  useEffect(() => {
-    if (!form.useCustomerStyle && form.customerStyleId) {
-      setForm((prev) => ({ ...prev, customerStyleId: '' }));
-    }
-  }, [form.customerStyleId, form.useCustomerStyle]);
-
-  const handleCustomerStyleChange = (styleId) => {
-    const style = customerStyles.find((entry) => entry.id === styleId);
-    setForm((prev) => ({
-      ...prev,
-      customerStyleId: styleId,
-      tone: style?.tone || prev.tone,
-      language: style?.language || prev.language,
-    }));
-  };
-
-  const selectedStyle = customerStyles.find((style) => style.id === form.customerStyleId);
 
   const availableProducts = [...proposalProducts, ...customProducts];
   const selectedProducts = availableProducts.filter((product) => selectedProductIds.includes(product.id));
@@ -214,12 +285,27 @@ function ProposalComposerModal({ onClose }) {
     setLoading(true);
     setError(null);
     try {
+      let customerId = customerMode === 'existing' ? selectedCustomerId : '';
+      if (customerMode === 'new') {
+        const createdId = addCustomer({
+          name: newCustomer.name || form.clientName || 'Neuer Kunde',
+          company: newCustomer.company || form.clientCompany,
+          email: newCustomer.email || form.clientEmail,
+          styleId: form.customerStyleId || newCustomer.styleId,
+          notes: 'Automatisch beim Proposal angelegt.',
+        });
+        customerId = createdId;
+      }
+
       const selectedStyle = customerStyles.find((style) => style.id === form.customerStyleId);
       const payloadBody = {
         ...form,
-        tone: form.useCustomerStyle && selectedStyle ? selectedStyle.tone : form.tone,
-        language: form.useCustomerStyle && selectedStyle ? selectedStyle.language : form.language,
-        customerStyleId: form.useCustomerStyle ? form.customerStyleId : null,
+        startMode: startMode || form.startMode || (selectedTemplateId ? 'template' : 'scratch'),
+        templateId: selectedTemplateId || form.templateId || null,
+        customerId: customerId || null,
+        tone: selectedStyle ? selectedStyle.tone : form.tone,
+        language: selectedStyle ? selectedStyle.language : form.language,
+        customerStyleId: form.customerStyleId || null,
         products: selectedProducts,
       };
       const payload = await apiRequest('/api/proposals/ai-generate', {
@@ -256,6 +342,125 @@ function ProposalComposerModal({ onClose }) {
         </div>
         {!result ? (
           <form className="modal-content" onSubmit={handleSubmit}>
+            <section className="modal-section">
+              <div className="section-header">
+                <div>
+                  <h4>Wie möchtest du starten?</h4>
+                  <p className="muted">Entscheide, ob du ein bestehendes Template nutzt oder von Null beginnst.</p>
+                </div>
+              </div>
+              <div className="action-buttons">
+                <button
+                  type="button"
+                  className={startMode === 'template' ? 'secondary' : 'ghost-button'}
+                  onClick={() => setStartMode('template')}
+                >
+                  Mit Template starten
+                </button>
+                <button
+                  type="button"
+                  className={startMode === 'scratch' ? 'secondary' : 'ghost-button'}
+                  onClick={() => setStartMode('scratch')}
+                >
+                  Von vorne starten
+                </button>
+              </div>
+              {startMode === 'template' && (
+                <div className="modal-grid">
+                  <label className="span-2">
+                    Template auswählen
+                    <select
+                      value={selectedTemplateId}
+                      onChange={(e) => setSelectedTemplateId(e.target.value)}
+                      disabled={templatesLoading}
+                    >
+                      <option value="">Bitte auswählen</option>
+                      {templates.map((template) => (
+                        <option key={template.id} value={template.id}>
+                          {template.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {selectedTemplate && (
+                    <div className="style-preview span-2">
+                      <p>
+                        <strong>Beschreibung:</strong> {selectedTemplate.description || 'Keine Beschreibung hinterlegt.'}
+                      </p>
+                      <p className="muted small">Variablen: {selectedTemplate.variablesSchema?.length || 0}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              {startMode && (
+                <div className="modal-grid">
+                  <label>
+                    Kundenzuordnung
+                    <div className="action-buttons inline">
+                      <button
+                        type="button"
+                        className={customerMode === 'existing' ? 'secondary' : 'ghost-button'}
+                        onClick={() => setCustomerMode('existing')}
+                      >
+                        Bestehender Kunde
+                      </button>
+                      <button
+                        type="button"
+                        className={customerMode === 'new' ? 'secondary' : 'ghost-button'}
+                        onClick={() => setCustomerMode('new')}
+                      >
+                        Neuer Kunde
+                      </button>
+                    </div>
+                  </label>
+                  {customerMode === 'existing' ? (
+                    <label className="span-2">
+                      Kunde auswählen
+                      <select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}>
+                        <option value="">Bitte auswählen</option>
+                        {customers.map((customer) => (
+                          <option key={customer.id} value={customer.id}>
+                            {customer.name} – {customer.company}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <div className="modal-grid span-2">
+                      <label>
+                        Kundenname
+                        <input
+                          name="name"
+                          value={newCustomer.name}
+                          onChange={handleNewCustomerChange}
+                          placeholder="z. B. Neue Kundin"
+                        />
+                      </label>
+                      <label>
+                        Unternehmen
+                        <input name="company" value={newCustomer.company} onChange={handleNewCustomerChange} placeholder="Firma" />
+                      </label>
+                      <label>
+                        E-Mail
+                        <input name="email" value={newCustomer.email} onChange={handleNewCustomerChange} placeholder="Kontakt" />
+                      </label>
+                      <label>
+                        Standardstil
+                        <select name="styleId" value={newCustomer.styleId} onChange={(e) => handleStyleSelect(e.target.value)}>
+                          <option value="">Kein Stil</option>
+                          {customerStyles.map((style) => (
+                            <option key={style.id} value={style.id}>
+                              {style.name} ({style.language?.toUpperCase()})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+
             {fieldGroups.map((group) => {
               const isProjectStory = group.title === 'Projektstory';
               return (
@@ -283,14 +488,20 @@ function ProposalComposerModal({ onClose }) {
                           </label>
                         );
                       }
-                      if (field === 'projectDescription') {
-                        return (
-                          <label key={field} className="span-2">
-                            {config.label}
-                            <textarea name={field} value={form[field]} onChange={handleChange} placeholder={config.placeholder} required />
-                          </label>
-                        );
-                      }
+                        if (field === 'projectDescription') {
+                          return (
+                            <label key={field} className="span-2">
+                              {config.label}
+                              <textarea
+                                name={field}
+                                value={form[field]}
+                                onChange={handleChange}
+                                placeholder={config.placeholder}
+                                required
+                              />
+                            </label>
+                          );
+                        }
                       return (
                         <label key={field} className={field === 'projectTitle' ? 'project-title-field' : ''}>
                           {config.label}
@@ -314,85 +525,52 @@ function ProposalComposerModal({ onClose }) {
               <div className="section-header">
                 <div>
                   <h4>Ton & Sprache</h4>
-                  <p className="muted">Nutze Standard-Optionen oder gespeicherte Kundenstile.</p>
+                  <p className="muted">Nutze Standardstile aus den Einstellungen oder passe Tone und Sprache manuell an.</p>
                 </div>
               </div>
-              <div className="toggle-row">
-                <span className="toggle-label">Individuelle Kundensprache verwenden</span>
-                <label className="toggle-control">
-                  <input
-                    type="checkbox"
-                    name="useCustomerStyle"
-                    checked={form.useCustomerStyle}
-                    onChange={handleChange}
-                  />
-                  <span className="toggle-track">
-                    <span className="toggle-thumb" />
-                  </span>
+              <div className="modal-grid">
+                <label className="span-2">
+                  Standardstil auswählen
+                  <select name="customerStyleId" value={form.customerStyleId} onChange={(e) => handleStyleSelect(e.target.value)}>
+                    <option value="">Kein Standardstil</option>
+                    {customerStyles.map((style) => (
+                      <option key={style.id} value={style.id}>
+                        {style.name} ({style.language?.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
                 </label>
+                <label>
+                  {fieldConfig.tone.label}
+                  <select name="tone" value={form.tone} onChange={handleChange}>
+                    {fieldConfig.tone.options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  {fieldConfig.language.label}
+                  <select name="language" value={form.language} onChange={handleChange}>
+                    {fieldConfig.language.options.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {form.customerStyleId ? (
+                  <div className="style-preview span-2">
+                    <p>
+                      <strong>Ton:</strong> {customerStyles.find((style) => style.id === form.customerStyleId)?.tone || '—'}
+                    </p>
+                    <p className="muted">
+                      {customerStyles.find((style) => style.id === form.customerStyleId)?.description || 'Kein Beschreibungstext hinterlegt.'}
+                    </p>
+                  </div>
+                ) : null}
               </div>
-              {form.useCustomerStyle ? (
-                customerStyles.length ? (
-                  <div className="modal-grid">
-                    <label className="span-2">
-                      Kundensprache auswählen
-                      <select
-                        name="customerStyleId"
-                        value={form.customerStyleId}
-                        onChange={(e) => handleCustomerStyleChange(e.target.value)}
-                        required
-                      >
-                        <option value="">Bitte auswählen</option>
-                        {customerStyles.map((style) => (
-                          <option key={style.id} value={style.id}>
-                            {style.name} ({style.language?.toUpperCase()})
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {selectedStyle ? (
-                      <div className="style-preview span-2">
-                        <p>
-                          <strong>Ton:</strong> {selectedStyle.tone || '—'}
-                        </p>
-                        <p className="muted">{selectedStyle.description || 'Kein Beschreibungstext hinterlegt.'}</p>
-                      </div>
-                    ) : (
-                      <p className="muted span-2">Wähle einen Stil, um Tonalität und Sprache zu übernehmen.</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="product-empty-state">
-                    <p>Keine Kundenstile angelegt.</p>
-                    <Link to="/customer-styles" className="ghost-button small">
-                      Kundenstile öffnen
-                    </Link>
-                  </div>
-                )
-              ) : (
-                <div className="modal-grid">
-                  <label>
-                    {fieldConfig.tone.label}
-                    <select name="tone" value={form.tone} onChange={handleChange}>
-                      {fieldConfig.tone.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {fieldConfig.language.label}
-                    <select name="language" value={form.language} onChange={handleChange}>
-                      {fieldConfig.language.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              )}
             </section>
 
             <section className="modal-section">
@@ -551,3 +729,4 @@ function ProposalComposerModal({ onClose }) {
     </div>
   );
 }
+
