@@ -10,6 +10,7 @@ const DEFAULT_CUSTOMERS = [
     email: 'alex.kunde@example.com',
     notes: 'Bevorzugt kurze Mails und wöchentliche Updates.',
     styleId: 'corporate-de',
+    useCustomerStyle: true,
   },
   {
     id: 'customer-2',
@@ -18,8 +19,12 @@ const DEFAULT_CUSTOMERS = [
     email: 'jamie@seedstart.com',
     notes: 'Interessiert an klarer Roadmap und Pricing-Transparenz.',
     styleId: 'friendly-en',
+    useCustomerStyle: true,
   },
 ];
+
+const normalizeCustomers = (list) =>
+  list.map((customer) => ({ ...customer, useCustomerStyle: customer.useCustomerStyle ?? Boolean(customer.styleId) }));
 
 const readStored = () => {
   if (typeof window === 'undefined') return null;
@@ -46,7 +51,8 @@ const useCustomerStore = create((set, get) => ({
   initialize: () => {
     const stored = readStored();
     if (stored && Array.isArray(stored)) {
-      set({ customers: stored });
+      const normalized = normalizeCustomers(stored);
+      set({ customers: normalized });
     } else {
       set({ customers: DEFAULT_CUSTOMERS });
       persist(DEFAULT_CUSTOMERS);
@@ -54,13 +60,27 @@ const useCustomerStore = create((set, get) => ({
   },
   addCustomer: (customer) => {
     const id = customer.id || `customer-${Date.now()}`;
-    const next = [...get().customers, { ...customer, id }];
+    const nextCustomer = {
+      ...customer,
+      id,
+      useCustomerStyle: customer.useCustomerStyle ?? Boolean(customer.styleId),
+    };
+    const next = [...get().customers, nextCustomer];
     persist(next);
     set({ customers: next });
     return id;
   },
   updateCustomer: (id, updates) => {
-    const next = get().customers.map((customer) => (customer.id === id ? { ...customer, ...updates } : customer));
+    const next = get().customers.map((customer) =>
+      customer.id === id
+        ? {
+            ...customer,
+            ...updates,
+            useCustomerStyle:
+              updates.useCustomerStyle ?? customer.useCustomerStyle ?? Boolean(updates.styleId ?? customer.styleId),
+          }
+        : customer,
+    );
     persist(next);
     set({ customers: next });
   },

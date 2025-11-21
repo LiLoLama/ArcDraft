@@ -140,6 +140,7 @@ function ProposalComposerModal({ onClose }) {
   const [editingProductId, setEditingProductId] = useState(null);
   const [productDraft, setProductDraft] = useState({ name: '', description: '', price: '' });
   const [error, setError] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     document.body.classList.add('no-scroll');
@@ -183,14 +184,15 @@ function ProposalComposerModal({ onClose }) {
 
   useEffect(() => {
     if (customerMode === 'existing' && selectedCustomer) {
-      const style = customerStyles.find((entry) => entry.id === selectedCustomer.styleId);
+      const styleId = selectedCustomer.useCustomerStyle === false ? '' : selectedCustomer.styleId;
+      const style = customerStyles.find((entry) => entry.id === styleId);
       setForm((prev) => ({
         ...prev,
         clientName: selectedCustomer.name || prev.clientName,
         clientCompany: selectedCustomer.company || prev.clientCompany,
         clientEmail: selectedCustomer.email || prev.clientEmail,
-        customerStyleId: selectedCustomer.styleId || '',
-        useCustomerStyle: Boolean(selectedCustomer.styleId),
+        customerStyleId: styleId || '',
+        useCustomerStyle: Boolean(styleId),
         tone: style?.tone || prev.tone,
         language: style?.language || prev.language,
       }));
@@ -213,6 +215,20 @@ function ProposalComposerModal({ onClose }) {
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setForm({ ...form, [e.target.name]: value });
+  };
+
+  const startReady =
+    startMode &&
+    ((startMode === 'template' && selectedTemplateId) || startMode === 'scratch') &&
+    (customerMode === 'existing' ? selectedCustomerId : newCustomer.name.trim());
+
+  const handleStartContinue = () => {
+    if (!startReady) return;
+    setShowDetails(true);
+  };
+
+  const resetToStart = () => {
+    setShowDetails(false);
   };
 
   const handleNewCustomerChange = (e) => {
@@ -293,6 +309,7 @@ function ProposalComposerModal({ onClose }) {
           company: newCustomer.company || form.clientCompany,
           email: newCustomer.email || form.clientEmail,
           styleId: form.customerStyleId || newCustomer.styleId,
+          useCustomerStyle: Boolean(form.customerStyleId || newCustomer.styleId),
           notes: 'Automatisch beim Proposal angelegt.',
         });
         customerId = createdId;
@@ -319,6 +336,12 @@ function ProposalComposerModal({ onClose }) {
       setCustomProducts([]);
       setSelectedProductIds([]);
       setProposalProducts(products.map((product) => ({ ...product })));
+      setStartMode('');
+      setCustomerMode('existing');
+      setSelectedCustomerId('');
+      setSelectedTemplateId('');
+      setNewCustomer({ name: '', company: '', email: '', styleId: '' });
+      setShowDetails(false);
     } catch (err) {
       setError(err.message || 'Etwas ist schiefgelaufen.');
     } finally {
@@ -343,157 +366,223 @@ function ProposalComposerModal({ onClose }) {
         </div>
         {!result ? (
           <form className="modal-content" onSubmit={handleSubmit}>
-            <section className="modal-section">
-              <div className="section-header">
-                <div>
-                  <h4>Wie möchtest du starten?</h4>
-                  <p className="muted">Entscheide, ob du ein bestehendes Template nutzt oder von Null beginnst.</p>
-                </div>
-              </div>
-              <div className="action-buttons">
-                <button
-                  type="button"
-                  className={startMode === 'template' ? 'secondary' : 'ghost-button'}
-                  onClick={() => setStartMode('template')}
-                >
-                  Mit Template starten
-                </button>
-                <button
-                  type="button"
-                  className={startMode === 'scratch' ? 'secondary' : 'ghost-button'}
-                  onClick={() => setStartMode('scratch')}
-                >
-                  Von vorne starten
-                </button>
-              </div>
-              {startMode === 'template' && (
-                <div className="modal-grid">
-                  <label className="span-2">
-                    Template auswählen
-                    <select
-                      value={selectedTemplateId}
-                      onChange={(e) => setSelectedTemplateId(e.target.value)}
-                      disabled={templatesLoading}
+            {!showDetails ? (
+              <>
+                <section className="modal-section">
+                  <div className="section-header">
+                    <div>
+                      <h4>Wie möchtest du starten?</h4>
+                      <p className="muted">Entscheide, ob du ein bestehendes Template nutzt oder von Null beginnst.</p>
+                    </div>
+                  </div>
+                  <div className="action-buttons">
+                    <button
+                      type="button"
+                      className={startMode === 'template' ? 'secondary' : 'ghost-button'}
+                      onClick={() => setStartMode('template')}
                     >
-                      <option value="">Bitte auswählen</option>
-                      {templates.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {selectedTemplate && (
-                    <div className="style-preview span-2">
-                      <p>
-                        <strong>Beschreibung:</strong> {selectedTemplate.description || 'Keine Beschreibung hinterlegt.'}
-                      </p>
-                      <p className="muted small">Variablen: {selectedTemplate.variablesSchema?.length || 0}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-              {startMode && (
-                <div className="modal-grid">
-                  <label>
-                    Kundenzuordnung
-                    <div className="action-buttons inline">
-                      <button
-                        type="button"
-                        className={customerMode === 'existing' ? 'secondary' : 'ghost-button'}
-                        onClick={() => setCustomerMode('existing')}
-                      >
-                        Bestehender Kunde
-                      </button>
-                      <button
-                        type="button"
-                        className={customerMode === 'new' ? 'secondary' : 'ghost-button'}
-                        onClick={() => setCustomerMode('new')}
-                      >
-                        Neuer Kunde
-                      </button>
-                    </div>
-                  </label>
-                  {customerMode === 'existing' ? (
-                    <label className="span-2">
-                      Kunde auswählen
-                      <select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}>
-                        <option value="">Bitte auswählen</option>
-                        {customers.map((customer) => (
-                          <option key={customer.id} value={customer.id}>
-                            {customer.name} – {customer.company}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <div className="modal-grid span-2">
-                      <label>
-                        Kundenname
-                        <input
-                          name="name"
-                          value={newCustomer.name}
-                          onChange={handleNewCustomerChange}
-                          placeholder="z. B. Neue Kundin"
-                        />
-                      </label>
-                      <label>
-                        Unternehmen
-                        <input name="company" value={newCustomer.company} onChange={handleNewCustomerChange} placeholder="Firma" />
-                      </label>
-                      <label>
-                        E-Mail
-                        <input name="email" value={newCustomer.email} onChange={handleNewCustomerChange} placeholder="Kontakt" />
-                      </label>
-                      <label>
-                        Standardstil
-                        <select name="styleId" value={newCustomer.styleId} onChange={(e) => handleStyleSelect(e.target.value)}>
-                          <option value="">Kein Stil</option>
-                          {customerStyles.map((style) => (
-                            <option key={style.id} value={style.id}>
-                              {style.name} ({style.language?.toUpperCase()})
+                      Mit Template starten
+                    </button>
+                    <button
+                      type="button"
+                      className={startMode === 'scratch' ? 'secondary' : 'ghost-button'}
+                      onClick={() => setStartMode('scratch')}
+                    >
+                      Von vorne starten
+                    </button>
+                  </div>
+                  {startMode === 'template' && (
+                    <div className="modal-grid">
+                      <label className="span-2">
+                        Template auswählen
+                        <select
+                          value={selectedTemplateId}
+                          onChange={(e) => setSelectedTemplateId(e.target.value)}
+                          disabled={templatesLoading}
+                        >
+                          <option value="">Bitte auswählen</option>
+                          {templates.map((template) => (
+                            <option key={template.id} value={template.id}>
+                              {template.name}
                             </option>
                           ))}
                         </select>
                       </label>
+                      {selectedTemplate && (
+                        <div className="style-preview span-2">
+                          <p>
+                            <strong>Beschreibung:</strong> {selectedTemplate.description || 'Keine Beschreibung hinterlegt.'}
+                          </p>
+                          <p className="muted small">Variablen: {selectedTemplate.variablesSchema?.length || 0}</p>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
-            </section>
-
-            {fieldGroups.map((group) => {
-              const isProjectStory = group.title === 'Projektstory';
-              return (
-                <section key={group.title} className={`modal-section ${isProjectStory ? 'project-story-section' : ''}`}>
-                  <div className="section-header">
-                    <div>
-                      <h4>{group.title}</h4>
-                      <p className="muted">{group.description}</p>
-                    </div>
-                  </div>
-                  <div className={`modal-grid ${isProjectStory ? 'project-story-grid' : ''}`}>
-                    {group.fields.map((field) => {
-                      const config = fieldConfig[field];
-                      if (config.type === 'select') {
-                        return (
-                          <label key={field}>
-                            {config.label}
-                            <select name={field} value={form[field]} onChange={handleChange}>
-                              {config.options.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
+                  {startMode && (
+                    <div className="modal-grid">
+                      <label>
+                        Kundenzuordnung
+                        <div className="action-buttons inline">
+                          <button
+                            type="button"
+                            className={customerMode === 'existing' ? 'secondary' : 'ghost-button'}
+                            onClick={() => setCustomerMode('existing')}
+                          >
+                            Bestehender Kunde
+                          </button>
+                          <button
+                            type="button"
+                            className={customerMode === 'new' ? 'secondary' : 'ghost-button'}
+                            onClick={() => setCustomerMode('new')}
+                          >
+                            Neuer Kunde
+                          </button>
+                        </div>
+                      </label>
+                      {customerMode === 'existing' ? (
+                        <label className="span-2">
+                          Kunde auswählen
+                          <select value={selectedCustomerId} onChange={(e) => setSelectedCustomerId(e.target.value)}>
+                            <option value="">Bitte auswählen</option>
+                            {customers.map((customer) => (
+                              <option key={customer.id} value={customer.id}>
+                                {customer.name} – {customer.company}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ) : (
+                        <div className="modal-grid span-2">
+                          <label>
+                            Kundenname
+                            <input
+                              name="name"
+                              value={newCustomer.name}
+                              onChange={handleNewCustomerChange}
+                              placeholder="z. B. Neue Kundin"
+                            />
+                          </label>
+                          <label>
+                            Unternehmen
+                            <input name="company" value={newCustomer.company} onChange={handleNewCustomerChange} placeholder="Firma" />
+                          </label>
+                          <label>
+                            E-Mail
+                            <input name="email" value={newCustomer.email} onChange={handleNewCustomerChange} placeholder="Kontakt" />
+                          </label>
+                          <label>
+                            Standardstil
+                            <select name="styleId" value={newCustomer.styleId} onChange={(e) => handleStyleSelect(e.target.value)}>
+                              <option value="">Kein Stil</option>
+                              {customerStyles.map((style) => (
+                                <option key={style.id} value={style.id}>
+                                  {style.name} ({style.language?.toUpperCase()})
                                 </option>
                               ))}
                             </select>
                           </label>
-                        );
-                      }
-                        if (field === 'projectDescription') {
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                <div className="modal-actions">
+                  <div>
+                    <p className="muted">Wähle einen Startmodus und eine Kundenzuordnung, um Details zu pflegen.</p>
+                  </div>
+                  <div className="action-buttons">
+                    <button type="button" className="ghost-button" onClick={onClose}>
+                      Abbrechen
+                    </button>
+                    <button type="button" className="primary" onClick={handleStartContinue} disabled={!startReady}>
+                      Weiter
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <section className="modal-section">
+                  <div className="section-header">
+                    <div>
+                      <h4>Start-Einstellungen</h4>
+                      <p className="muted">Bearbeite Startmodus, Template und Kundenzuordnung bei Bedarf.</p>
+                    </div>
+                    <button type="button" className="ghost-button small" onClick={resetToStart}>
+                      Start anpassen
+                    </button>
+                  </div>
+                  <div className="modal-grid start-summary">
+                    <div>
+                      <p className="muted small">Start</p>
+                      <strong>{startMode === 'template' ? 'Mit Template' : 'Von vorne'}</strong>
+                    </div>
+                    <div>
+                      <p className="muted small">Template</p>
+                      <strong>{startMode === 'template' ? selectedTemplate?.name || 'Kein Template gewählt' : 'Keins'}</strong>
+                    </div>
+                    <div>
+                      <p className="muted small">Kunde</p>
+                      <strong>
+                        {customerMode === 'existing'
+                          ? selectedCustomer
+                            ? `${selectedCustomer.name} – ${selectedCustomer.company || 'Kein Unternehmen'}`
+                            : 'Kein Kunde gewählt'
+                          : newCustomer.name
+                            ? `${newCustomer.name} (neu)`
+                            : 'Neuer Kunde'}
+                      </strong>
+                    </div>
+                  </div>
+                </section>
+
+                {fieldGroups.map((group) => {
+                  const isProjectStory = group.title === 'Projektstory';
+                  return (
+                    <section key={group.title} className={`modal-section ${isProjectStory ? 'project-story-section' : ''}`}>
+                      <div className="section-header">
+                        <div>
+                          <h4>{group.title}</h4>
+                          <p className="muted">{group.description}</p>
+                        </div>
+                      </div>
+                      <div className={`modal-grid ${isProjectStory ? 'project-story-grid' : ''}`}>
+                        {group.fields.map((field) => {
+                          const config = fieldConfig[field];
+                          if (config.type === 'select') {
+                            return (
+                              <label key={field}>
+                                {config.label}
+                                <select name={field} value={form[field]} onChange={handleChange}>
+                                  {config.options.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            );
+                          }
+                            if (field === 'projectDescription') {
+                              return (
+                                <label key={field} className="span-2">
+                                  {config.label}
+                                  <textarea
+                                    name={field}
+                                    value={form[field]}
+                                    onChange={handleChange}
+                                    placeholder={config.placeholder}
+                                    required
+                                  />
+                                </label>
+                              );
+                            }
                           return (
-                            <label key={field} className="span-2">
+                            <label key={field} className={field === 'projectTitle' ? 'project-title-field' : ''}>
                               {config.label}
-                              <textarea
+                              <input
+                                type={config.type || 'text'}
                                 name={field}
                                 value={form[field]}
                                 onChange={handleChange}
@@ -502,200 +591,188 @@ function ProposalComposerModal({ onClose }) {
                               />
                             </label>
                           );
-                        }
-                      return (
-                        <label key={field} className={field === 'projectTitle' ? 'project-title-field' : ''}>
-                          {config.label}
-                          <input
-                            type={config.type || 'text'}
-                            name={field}
-                            value={form[field]}
-                            onChange={handleChange}
-                            placeholder={config.placeholder}
-                            required
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </section>
-              );
-            })}
-
-            <section className="modal-section">
-              <div className="section-header">
-                <div>
-                  <h4>Ton & Sprache</h4>
-                  <p className="muted">Nutze Standardstile aus den Einstellungen oder passe Tone und Sprache manuell an.</p>
-                </div>
-              </div>
-              <div className="modal-grid">
-                <label className="span-2">
-                  Standardstil auswählen
-                  <select name="customerStyleId" value={form.customerStyleId} onChange={(e) => handleStyleSelect(e.target.value)}>
-                    <option value="">Kein Standardstil</option>
-                    {customerStyles.map((style) => (
-                      <option key={style.id} value={style.id}>
-                        {style.name} ({style.language?.toUpperCase()})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  {fieldConfig.tone.label}
-                  <select name="tone" value={form.tone} onChange={handleChange}>
-                    {fieldConfig.tone.options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  {fieldConfig.language.label}
-                  <select name="language" value={form.language} onChange={handleChange}>
-                    {fieldConfig.language.options.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {form.customerStyleId ? (
-                  <div className="style-preview span-2">
-                    <p>
-                      <strong>Ton:</strong> {customerStyles.find((style) => style.id === form.customerStyleId)?.tone || '—'}
-                    </p>
-                    <p className="muted">
-                      {customerStyles.find((style) => style.id === form.customerStyleId)?.description || 'Kein Beschreibungstext hinterlegt.'}
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            </section>
-
-            <section className="modal-section">
-              <div className="section-header">
-                <div>
-                  <h4>Produkte & Leistungen</h4>
-                  <p className="muted">Wähle, was in das Angebot aufgenommen werden soll.</p>
-                </div>
-                <span className="chip success">{selectedProducts.length} ausgewählt</span>
-              </div>
-              {availableProducts.length > 0 ? (
-                <div className="product-grid">
-                  {availableProducts.map((product) => {
-                    const isSelected = selectedProductIds.includes(product.id);
-                    return (
-                      <div
-                        key={product.id}
-                        role="button"
-                        tabIndex={0}
-                        className={`product-card ${isSelected ? 'selected' : ''}`}
-                        onClick={() => toggleProduct(product.id)}
-                        onKeyDown={(e) => e.key === 'Enter' && toggleProduct(product.id)}
-                      >
-                        <span className="price-pill">{product.price}</span>
-                        <strong>{product.name}</strong>
-                        <p className="muted">{product.description || 'Individuelle Beschreibung folgt im Proposal.'}</p>
-                        <div className="chip-row">
-                          {product.isCustom && <span className="chip subtle">Eigenes Produkt</span>}
-                          {editingProductId === product.id && <span className="chip subtle">In Bearbeitung</span>}
-                        </div>
-                        <div className="action-buttons inline">
-                          <button
-                            className="ghost-button small"
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              startEditingProduct(product);
-                            }}
-                          >
-                            Für dieses Proposal anpassen
-                          </button>
-                        </div>
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="product-empty-state">
-                  <p>Noch keine Produkte verfügbar. Lege sie im Products Bereich an.</p>
-                  <Link to="/products" className="ghost-button small">
-                    Products öffnen
-                  </Link>
-                </div>
-              )}
-              {editingProductId && (
-                <div className="product-edit-panel">
+                    </section>
+                  );
+                })}
+
+                <section className="modal-section">
                   <div className="section-header">
                     <div>
-                      <h5>Produktdetails anpassen</h5>
-                      <p className="muted">Änderungen gelten nur für dieses Proposal.</p>
+                      <h4>Ton & Sprache</h4>
+                      <p className="muted">Nutze Standardstile aus den Einstellungen oder passe Tone und Sprache manuell an.</p>
                     </div>
                   </div>
                   <div className="modal-grid">
-                    <label>
-                      Produktname
-                      <input name="name" value={productDraft.name} onChange={handleDraftChange} />
-                    </label>
-                    <label>
-                      Preis
-                      <input name="price" value={productDraft.price} onChange={handleDraftChange} />
-                    </label>
                     <label className="span-2">
-                      Beschreibung
-                      <textarea name="description" value={productDraft.description} onChange={handleDraftChange} rows={3} />
+                      Standardstil auswählen
+                      <select name="customerStyleId" value={form.customerStyleId} onChange={(e) => handleStyleSelect(e.target.value)}>
+                        <option value="">Kein Standardstil</option>
+                        {customerStyles.map((style) => (
+                          <option key={style.id} value={style.id}>
+                            {style.name} ({style.language?.toUpperCase()})
+                          </option>
+                        ))}
+                      </select>
                     </label>
+                    <label>
+                      {fieldConfig.tone.label}
+                      <select name="tone" value={form.tone} onChange={handleChange}>
+                        {fieldConfig.tone.options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      {fieldConfig.language.label}
+                      <select name="language" value={form.language} onChange={handleChange}>
+                        {fieldConfig.language.options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    {form.customerStyleId ? (
+                      <div className="style-preview span-2">
+                        <p>
+                          <strong>Ton:</strong> {customerStyles.find((style) => style.id === form.customerStyleId)?.tone || '—'}
+                        </p>
+                        <p className="muted">
+                          {customerStyles.find((style) => style.id === form.customerStyleId)?.description || 'Kein Beschreibungstext hinterlegt.'}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </section>
+
+                <section className="modal-section">
+                  <div className="section-header">
+                    <div>
+                      <h4>Produkte & Leistungen</h4>
+                      <p className="muted">Wähle, was in das Angebot aufgenommen werden soll.</p>
+                    </div>
+                    <span className="chip success">{selectedProducts.length} ausgewählt</span>
+                  </div>
+                  {availableProducts.length > 0 ? (
+                    <div className="product-grid">
+                      {availableProducts.map((product) => {
+                        const isSelected = selectedProductIds.includes(product.id);
+                        return (
+                          <div
+                            key={product.id}
+                            role="button"
+                            tabIndex={0}
+                            className={`product-card ${isSelected ? 'selected' : ''}`}
+                            onClick={() => toggleProduct(product.id)}
+                            onKeyDown={(e) => e.key === 'Enter' && toggleProduct(product.id)}
+                          >
+                            <span className="price-pill">{product.price}</span>
+                            <strong>{product.name}</strong>
+                            <p className="muted">{product.description || 'Individuelle Beschreibung folgt im Proposal.'}</p>
+                            <div className="chip-row">
+                              {product.isCustom && <span className="chip subtle">Eigenes Produkt</span>}
+                              {editingProductId === product.id && <span className="chip subtle">In Bearbeitung</span>}
+                            </div>
+                            <div className="action-buttons inline">
+                              <button
+                                className="ghost-button small"
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  startEditingProduct(product);
+                                }}
+                              >
+                                Für dieses Proposal anpassen
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="product-empty-state">
+                      <p>Noch keine Produkte verfügbar. Lege sie im Products Bereich an.</p>
+                      <Link to="/products" className="ghost-button small">
+                        Products öffnen
+                      </Link>
+                    </div>
+                  )}
+                  {editingProductId && (
+                    <div className="product-edit-panel">
+                      <div className="section-header">
+                        <div>
+                          <h5>Produktdetails anpassen</h5>
+                          <p className="muted">Änderungen gelten nur für dieses Proposal.</p>
+                        </div>
+                      </div>
+                      <div className="modal-grid">
+                        <label>
+                          Produktname
+                          <input name="name" value={productDraft.name} onChange={handleDraftChange} />
+                        </label>
+                        <label>
+                          Preis
+                          <input name="price" value={productDraft.price} onChange={handleDraftChange} />
+                        </label>
+                        <label className="span-2">
+                          Beschreibung
+                          <textarea name="description" value={productDraft.description} onChange={handleDraftChange} rows={3} />
+                        </label>
+                      </div>
+                      <div className="action-buttons">
+                        <button type="button" className="ghost-button" onClick={() => setEditingProductId(null)}>
+                          Abbrechen
+                        </button>
+                        <button type="button" className="primary" onClick={saveProductDraft}>
+                          Änderungen übernehmen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="custom-product">
+                    <h5>Eigenes Produkt hinzufügen</h5>
+                    <p className="muted">Perfekt für individuelle Pakete oder Add-ons – nur für dieses Proposal sichtbar.</p>
+                    <div className="custom-product-form">
+                      <label>
+                        Produktname
+                        <input name="name" value={customProductForm.name} onChange={handleCustomProductChange} placeholder="z. B. Discovery Call" />
+                      </label>
+                      <label>
+                        Beschreibung
+                        <input name="description" value={customProductForm.description} onChange={handleCustomProductChange} placeholder="Kurzbeschreibung" />
+                      </label>
+                      <label>
+                        Preis
+                        <input name="price" value={customProductForm.price} onChange={handleCustomProductChange} placeholder="z. B. €1.200" />
+                      </label>
+                      <button type="button" className="secondary" onClick={handleAddCustomProduct}>
+                        Produkt anlegen
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                {error && <p className="error-msg">{error}</p>}
+
+                <div className="modal-actions">
+                  <div>
+                    <p className="muted">{selectedProducts.length > 0 ? 'Wir verwenden deine Auswahl für das Pricing.' : 'Wähle mindestens ein Produkt aus.'}</p>
                   </div>
                   <div className="action-buttons">
-                    <button type="button" className="ghost-button" onClick={() => setEditingProductId(null)}>
+                    <button type="button" className="ghost-button" onClick={onClose}>
                       Abbrechen
                     </button>
-                    <button type="button" className="primary" onClick={saveProductDraft}>
-                      Änderungen übernehmen
+                    <button className="primary" type="submit" disabled={loading || selectedProducts.length === 0}>
+                      {loading ? 'Wird erstellt…' : 'Proposal anlegen'}
                     </button>
                   </div>
                 </div>
-              )}
-              <div className="custom-product">
-                <h5>Eigenes Produkt hinzufügen</h5>
-                <p className="muted">Perfekt für individuelle Pakete oder Add-ons – nur für dieses Proposal sichtbar.</p>
-                <div className="custom-product-form">
-                  <label>
-                    Produktname
-                    <input name="name" value={customProductForm.name} onChange={handleCustomProductChange} placeholder="z. B. Discovery Call" />
-                  </label>
-                  <label>
-                    Beschreibung
-                    <input name="description" value={customProductForm.description} onChange={handleCustomProductChange} placeholder="Kurzbeschreibung" />
-                  </label>
-                  <label>
-                    Preis
-                    <input name="price" value={customProductForm.price} onChange={handleCustomProductChange} placeholder="z. B. €1.200" />
-                  </label>
-                  <button type="button" className="secondary" onClick={handleAddCustomProduct}>
-                    Produkt anlegen
-                  </button>
-                </div>
-              </div>
-            </section>
-
-            {error && <p className="error-msg">{error}</p>}
-
-            <div className="modal-actions">
-              <div>
-                <p className="muted">{selectedProducts.length > 0 ? 'Wir verwenden deine Auswahl für das Pricing.' : 'Wähle mindestens ein Produkt aus.'}</p>
-              </div>
-              <div className="action-buttons">
-                <button type="button" className="ghost-button" onClick={onClose}>
-                  Abbrechen
-                </button>
-                <button className="primary" type="submit" disabled={loading || selectedProducts.length === 0}>
-                  {loading ? 'Wird erstellt…' : 'Proposal anlegen'}
-                </button>
-              </div>
-            </div>
+              </>
+            )}
           </form>
         ) : (
           <div className="modal-content success-state">

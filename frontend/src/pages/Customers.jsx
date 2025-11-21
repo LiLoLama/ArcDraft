@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import useCustomerStore from '../store/customerStore';
 import useCustomerStyleStore from '../store/customerStyleStore';
 
-const emptyCustomer = { name: '', company: '', email: '', notes: '', styleId: '' };
+const emptyCustomer = { name: '', company: '', email: '', notes: '', styleId: '', useCustomerStyle: false };
 
 export default function CustomersPage() {
   const customers = useCustomerStore((s) => s.customers);
@@ -43,6 +43,7 @@ export default function CustomersPage() {
       email: customer.email || '',
       notes: customer.notes || '',
       styleId: customer.styleId || '',
+      useCustomerStyle: customer.useCustomerStyle ?? Boolean(customer.styleId),
     });
     setShowModal(true);
   };
@@ -50,10 +51,16 @@ export default function CustomersPage() {
   const saveCustomer = (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
+    const payload = {
+      ...form,
+      name: form.name.trim(),
+      styleId: form.useCustomerStyle ? form.styleId : '',
+      useCustomerStyle: form.useCustomerStyle,
+    };
     if (editingId) {
-      updateCustomer(editingId, { ...form, name: form.name.trim() });
+      updateCustomer(editingId, payload);
     } else {
-      addCustomer({ ...form, name: form.name.trim() });
+      addCustomer(payload);
     }
     setShowModal(false);
     setEditingId(null);
@@ -64,7 +71,10 @@ export default function CustomersPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const getStyleLabel = (styleId) => styles.find((style) => style.id === styleId)?.name || 'Kein Stil hinterlegt';
+  const getStyleLabel = (styleId, useStyle) => {
+    if (!useStyle) return 'Kein Stil aktiv';
+    return styles.find((style) => style.id === styleId)?.name || 'Kein Stil hinterlegt';
+  };
 
   return (
     <div className="page">
@@ -97,7 +107,7 @@ export default function CustomersPage() {
                   <p className="muted">{customer.company || 'Kein Unternehmen hinterlegt'}</p>
                   <p className="muted small">{customer.email || 'Keine E-Mail hinterlegt'}</p>
                   <div className="chip-row">
-                    <span className="chip subtle">Stil: {getStyleLabel(customer.styleId)}</span>
+                    <span className="chip subtle">Stil: {getStyleLabel(customer.styleId, customer.useCustomerStyle)}</span>
                   </div>
                   {customer.notes && <p className="muted small">Notizen: {customer.notes}</p>}
                 </div>
@@ -146,17 +156,39 @@ export default function CustomersPage() {
                   E-Mail
                   <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="E-Mail-Adresse" />
                 </label>
-                <label>
-                  Zugeordneter Stil
-                  <select name="styleId" value={form.styleId} onChange={handleChange}>
-                    <option value="">Kein Stil</option>
-                    {styles.map((style) => (
-                      <option key={style.id} value={style.id}>
-                        {style.name} ({style.language?.toUpperCase()})
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <div className="toggle-row span-2">
+                  <div>
+                    <p className="toggle-label">Individuellen Kundenstil verwenden</p>
+                    <p className="muted small">Aktiviere einen speziellen Stil nur für diesen Kunden.</p>
+                  </div>
+                  <label className="toggle-control">
+                    <input
+                      type="checkbox"
+                      name="useCustomerStyle"
+                      checked={form.useCustomerStyle}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setForm((prev) => ({ ...prev, useCustomerStyle: checked, styleId: checked ? prev.styleId : '' }));
+                      }}
+                    />
+                    <span className="toggle-track">
+                      <span className="toggle-thumb" />
+                    </span>
+                  </label>
+                </div>
+                {form.useCustomerStyle && (
+                  <label>
+                    Zugeordneter Stil
+                    <select name="styleId" value={form.styleId} onChange={handleChange}>
+                      <option value="">Kein Stil</option>
+                      {styles.map((style) => (
+                        <option key={style.id} value={style.id}>
+                          {style.name} ({style.language?.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <label className="span-2">
                   Notizen
                   <textarea name="notes" value={form.notes} onChange={handleChange} rows={3} placeholder="Präferenzen, Besonderheiten" />
