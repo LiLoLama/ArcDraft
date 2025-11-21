@@ -1073,6 +1073,51 @@ textarea {
   margin-top: var(--space-sm);
 }
 
+.options-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.options-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--card-bg);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+}
+
+.options-wrapper:hover .options-menu,
+.options-wrapper:focus-within .options-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.options-menu .menu-item {
+  background: none;
+  border: none;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.options-menu .menu-item:hover {
+  background: var(--table-hover);
+}
+
 .product-edit-panel {
   margin-top: var(--space-md);
   border: 1px solid var(--stroke);

@@ -2,36 +2,54 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiRequest } from '../api/client';
 import useAuthStore from '../store/authStore';
-import useCustomerStyleStore from '../store/customerStyleStore';
+import useProductStore from '../store/productStore';
 
 const emptyTemplate = {
   name: '',
   description: '',
   status: 'draft',
-  variablesSchema: [],
-  sections: [],
-  startMode: 'template',
-  intendedCustomer: 'both',
-  defaultStyleId: '',
+  projectTitle: '',
+  projectDescription: '',
+  tone: 'freundlich',
+  language: 'de',
+  productIds: [],
+  customProducts: [],
 };
 
-const sectionTypes = ['hero', 'text', 'pricing', 'signature_block', 'custom'];
+const toneOptions = [
+  { value: 'freundlich', label: 'Freundlich & optimistisch' },
+  { value: 'bold', label: 'Mutig & visionär' },
+  { value: 'formal', label: 'Seriös & strukturiert' },
+];
+
+const languageOptions = [
+  { value: 'de', label: 'Deutsch' },
+  { value: 'en', label: 'Englisch' },
+];
 
 export default function TemplateDetailPage() {
   const token = useAuthStore((s) => s.token);
   const { id } = useParams();
   const navigate = useNavigate();
   const [template, setTemplate] = useState(emptyTemplate);
-  const styles = useCustomerStyleStore((s) => s.styles);
-  const initializeStyles = useCustomerStyleStore((s) => s.initializeStyles);
+  const products = useProductStore((s) => s.products);
+  const initializeProducts = useProductStore((s) => s.initializeProducts);
+  const [customProductDraft, setCustomProductDraft] = useState({ name: '', description: '', price: '' });
 
   useEffect(() => {
-    initializeStyles();
-  }, [initializeStyles]);
+    initializeProducts();
+  }, [initializeProducts]);
 
   useEffect(() => {
     if (id === 'new') return;
-    apiRequest(`/api/templates/${id}`, { token }).then((data) => setTemplate({ ...emptyTemplate, ...data }));
+    apiRequest(`/api/templates/${id}`, { token }).then((data) =>
+      setTemplate({
+        ...emptyTemplate,
+        ...data,
+        productIds: data.productIds || [],
+        customProducts: data.customProducts || [],
+      })
+    );
   }, [id, token]);
 
   const updateField = (field, value) => setTemplate((prev) => ({ ...prev, [field]: value }));
@@ -42,43 +60,59 @@ export default function TemplateDetailPage() {
       navigate(`/templates/${created.id}`);
     } else {
       const updated = await apiRequest(`/api/templates/${id}`, { method: 'PUT', token, body: template });
-      setTemplate(updated);
+      setTemplate({
+        ...emptyTemplate,
+        ...updated,
+        productIds: updated.productIds || [],
+        customProducts: updated.customProducts || [],
+      });
     }
   };
 
-  const addVariable = () => {
-    updateField('variablesSchema', [...template.variablesSchema, { key: '', label: '', type: 'string' }]);
+  const toggleProduct = (productId) => {
+    updateField(
+      'productIds',
+      template.productIds.includes(productId)
+        ? template.productIds.filter((id) => id !== productId)
+        : [...template.productIds, productId]
+    );
   };
 
-  const updateVariable = (index, field, value) => {
-    const next = [...template.variablesSchema];
-    next[index] = { ...next[index], [field]: value };
-    updateField('variablesSchema', next);
+  const addCustomProduct = () => {
+    if (!customProductDraft.name.trim()) return;
+    const idValue = crypto?.randomUUID ? crypto.randomUUID() : `custom-${Date.now()}`;
+    const newProduct = {
+      id: idValue,
+      ...customProductDraft,
+      price: customProductDraft.price || 'auf Anfrage',
+      isCustom: true,
+    };
+    updateField('customProducts', [...template.customProducts, newProduct]);
+    updateField('productIds', [...new Set([...template.productIds, idValue])]);
+    setCustomProductDraft({ name: '', description: '', price: '' });
   };
 
-  const addSection = () => {
-    const idValue = crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-    updateField('sections', [...template.sections, { id: idValue, title: 'Neue Section', type: 'text', contentStructure: { text: '' } }]);
+  const updateCustomProduct = (productId, field, value) => {
+    const next = template.customProducts.map((product) =>
+      product.id === productId ? { ...product, [field]: value } : product
+    );
+    updateField('customProducts', next);
   };
 
-  const updateSection = (index, field, value) => {
-    const next = [...template.sections];
-    next[index] = { ...next[index], [field]: value };
-    updateField('sections', next);
+  const removeCustomProduct = (productId) => {
+    updateField('customProducts', template.customProducts.filter((product) => product.id !== productId));
+    updateField('productIds', template.productIds.filter((id) => id !== productId));
   };
 
-  const updateSectionContent = (index, key, value) => {
-    const next = [...template.sections];
-    next[index] = { ...next[index], contentStructure: { ...next[index].contentStructure, [key]: value } };
-    updateField('sections', next);
-  };
+  const availableProducts = [...products, ...template.customProducts];
+  const selectedProducts = availableProducts.filter((product) => template.productIds.includes(product.id));
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1>Template</h1>
-          <p className="muted">Definiere strukturierte Bausteine.</p>
+          <p className="muted">Definiere die Standardbausteine für neue Proposals.</p>
         </div>
         <button className="primary" onClick={handleSave}>
           Speichern
@@ -101,96 +135,166 @@ export default function TemplateDetailPage() {
         Beschreibung
         <textarea value={template.description} onChange={(e) => updateField('description', e.target.value)} />
       </label>
+
       <section>
         <div className="section-header">
-          <h2>Start & Kundenzuordnung</h2>
-          <p className="muted">Richte das Template so aus, dass es zu deinem Proposal-Flow passt.</p>
+          <h2>Projektstory</h2>
+          <p className="muted">Halte fest, was das Template vermitteln soll.</p>
         </div>
         <div className="grid grid-2">
           <label>
-            Empfohlener Startpunkt
-            <select value={template.startMode} onChange={(e) => updateField('startMode', e.target.value)}>
-              <option value="template">Mit Template starten</option>
-              <option value="scratch">Von vorne starten</option>
+            Überschrift
+            <input
+              value={template.projectTitle}
+              onChange={(e) => updateField('projectTitle', e.target.value)}
+              placeholder="z. B. AI Sales Playbook"
+            />
+          </label>
+          <label className="span-2">
+            Beschreibung
+            <textarea
+              value={template.projectDescription}
+              onChange={(e) => updateField('projectDescription', e.target.value)}
+              placeholder="Was ist das Ziel und warum ist es wichtig?"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section>
+        <div className="section-header">
+          <h2>Ton & Sprache</h2>
+          <p className="muted">Passe Tone of Voice und Proposal-Sprache an.</p>
+        </div>
+        <div className="grid grid-2">
+          <label>
+            Ton
+            <select value={template.tone} onChange={(e) => updateField('tone', e.target.value)}>
+              {toneOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <label>
-            Kundentyp
-            <select value={template.intendedCustomer} onChange={(e) => updateField('intendedCustomer', e.target.value)}>
-              <option value="existing">Bestehende Kunden</option>
-              <option value="new">Neue Kunden</option>
-              <option value="both">Beides</option>
-            </select>
-          </label>
-          <label className="span-2">
-            Empfohlener Standardstil
-            <select value={template.defaultStyleId} onChange={(e) => updateField('defaultStyleId', e.target.value)}>
-              <option value="">Kein Stil</option>
-              {styles.map((style) => (
-                <option key={style.id} value={style.id}>
-                  {style.name} ({style.language?.toUpperCase()})
+            Sprache
+            <select value={template.language} onChange={(e) => updateField('language', e.target.value)}>
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </label>
         </div>
       </section>
+
       <section>
         <div className="section-header">
-          <h2>Variablen</h2>
-          <button className="ghost-button" onClick={addVariable}>
-            + Variable
-          </button>
+          <h2>Produkte & Leistungen</h2>
+          <span className="chip success">{selectedProducts.length} ausgewählt</span>
         </div>
-        {template.variablesSchema.map((variable, index) => (
-          <div key={index} className="grid grid-3">
-            <input placeholder="key" value={variable.key} onChange={(e) => updateVariable(index, 'key', e.target.value)} />
-            <input placeholder="label" value={variable.label} onChange={(e) => updateVariable(index, 'label', e.target.value)} />
-            <select value={variable.type} onChange={(e) => updateVariable(index, 'type', e.target.value)}>
-              <option value="string">String</option>
-              <option value="number">Number</option>
-              <option value="date">Date</option>
-              <option value="textarea">Textarea</option>
-            </select>
+        {availableProducts.length > 0 ? (
+          <div className="product-grid">
+            {availableProducts.map((product) => {
+              const isSelected = template.productIds.includes(product.id);
+              return (
+                <div
+                  key={product.id}
+                  role="button"
+                  tabIndex={0}
+                  className={`product-card ${isSelected ? 'selected' : ''}`}
+                  onClick={() => toggleProduct(product.id)}
+                  onKeyDown={(e) => e.key === 'Enter' && toggleProduct(product.id)}
+                >
+                  <span className="price-pill">{product.price}</span>
+                  <strong>{product.name}</strong>
+                  <p className="muted">{product.description || 'Individuelle Beschreibung folgt im Proposal.'}</p>
+                  {product.isCustom && <span className="chip subtle">Eigenes Produkt</span>}
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </section>
-      <section>
-        <div className="section-header">
-          <h2>Sections</h2>
-          <button className="ghost-button" onClick={addSection}>
-            + Section
-          </button>
+        ) : (
+          <p className="muted">Noch keine Produkte vorhanden.</p>
+        )}
+
+        <div className="custom-product">
+          <h5>Eigenes Produkt hinzufügen</h5>
+          <p className="muted">Perfekt für individuelle Pakete oder Add-ons.</p>
+          <div className="custom-product-form">
+            <label>
+              Produktname
+              <input
+                name="name"
+                value={customProductDraft.name}
+                onChange={(e) => setCustomProductDraft({ ...customProductDraft, name: e.target.value })}
+                placeholder="z. B. Discovery Call"
+              />
+            </label>
+            <label>
+              Beschreibung
+              <input
+                name="description"
+                value={customProductDraft.description}
+                onChange={(e) => setCustomProductDraft({ ...customProductDraft, description: e.target.value })}
+                placeholder="Kurzbeschreibung"
+              />
+            </label>
+            <label>
+              Preis
+              <input
+                name="price"
+                value={customProductDraft.price}
+                onChange={(e) => setCustomProductDraft({ ...customProductDraft, price: e.target.value })}
+                placeholder="z. B. €1.200"
+              />
+            </label>
+            <button type="button" className="secondary" onClick={addCustomProduct}>
+              Produkt anlegen
+            </button>
+          </div>
         </div>
-        <div className="sections-list">
-          {template.sections.map((section, index) => (
-            <div key={section.id || index} className="section-card">
-              <div className="grid grid-2">
-                <input value={section.title} onChange={(e) => updateSection(index, 'title', e.target.value)} />
-                <select value={section.type} onChange={(e) => updateSection(index, 'type', e.target.value)}>
-                  {sectionTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
-                </select>
+
+        {template.customProducts.length > 0 && (
+          <div className="product-edit-panel">
+            <div className="section-header">
+              <div>
+                <h5>Eigene Produkte verwalten</h5>
+                <p className="muted">Passe Details an oder entferne sie aus dem Template.</p>
               </div>
-              {section.type === 'pricing' ? (
-                <textarea
-                  value={JSON.stringify(section.contentStructure?.rows || [], null, 2)}
-                  onChange={(e) => updateSectionContent(index, 'rows', JSON.parse(e.target.value || '[]'))}
-                  rows={4}
-                />
-              ) : (
-                <textarea
-                  value={section.contentStructure?.text || ''}
-                  onChange={(e) => updateSectionContent(index, 'text', e.target.value)}
-                  rows={4}
-                />
-              )}
             </div>
-          ))}
-        </div>
+            {template.customProducts.map((product) => (
+              <div key={product.id} className="modal-grid">
+                <label>
+                  Produktname
+                  <input
+                    value={product.name}
+                    onChange={(e) => updateCustomProduct(product.id, 'name', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Preis
+                  <input value={product.price} onChange={(e) => updateCustomProduct(product.id, 'price', e.target.value)} />
+                </label>
+                <label className="span-2">
+                  Beschreibung
+                  <textarea
+                    value={product.description}
+                    rows={2}
+                    onChange={(e) => updateCustomProduct(product.id, 'description', e.target.value)}
+                  />
+                </label>
+                <div className="action-buttons inline">
+                  <button type="button" className="ghost-button" onClick={() => removeCustomProduct(product.id)}>
+                    Entfernen
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
