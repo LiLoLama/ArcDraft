@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiRequest } from '../api/client';
 import useAuthStore from '../store/authStore';
+import useCustomerStyleStore from '../store/customerStyleStore';
 
 const emptyTemplate = {
   name: '',
@@ -9,6 +10,9 @@ const emptyTemplate = {
   status: 'draft',
   variablesSchema: [],
   sections: [],
+  startMode: 'template',
+  intendedCustomer: 'both',
+  defaultStyleId: '',
 };
 
 const sectionTypes = ['hero', 'text', 'pricing', 'signature_block', 'custom'];
@@ -18,10 +22,16 @@ export default function TemplateDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [template, setTemplate] = useState(emptyTemplate);
+  const styles = useCustomerStyleStore((s) => s.styles);
+  const initializeStyles = useCustomerStyleStore((s) => s.initializeStyles);
+
+  useEffect(() => {
+    initializeStyles();
+  }, [initializeStyles]);
 
   useEffect(() => {
     if (id === 'new') return;
-    apiRequest(`/api/templates/${id}`, { token }).then(setTemplate);
+    apiRequest(`/api/templates/${id}`, { token }).then((data) => setTemplate({ ...emptyTemplate, ...data }));
   }, [id, token]);
 
   const updateField = (field, value) => setTemplate((prev) => ({ ...prev, [field]: value }));
@@ -91,6 +101,40 @@ export default function TemplateDetailPage() {
         Beschreibung
         <textarea value={template.description} onChange={(e) => updateField('description', e.target.value)} />
       </label>
+      <section>
+        <div className="section-header">
+          <h2>Start & Kundenzuordnung</h2>
+          <p className="muted">Richte das Template so aus, dass es zu deinem Proposal-Flow passt.</p>
+        </div>
+        <div className="grid grid-2">
+          <label>
+            Empfohlener Startpunkt
+            <select value={template.startMode} onChange={(e) => updateField('startMode', e.target.value)}>
+              <option value="template">Mit Template starten</option>
+              <option value="scratch">Von vorne starten</option>
+            </select>
+          </label>
+          <label>
+            Kundentyp
+            <select value={template.intendedCustomer} onChange={(e) => updateField('intendedCustomer', e.target.value)}>
+              <option value="existing">Bestehende Kunden</option>
+              <option value="new">Neue Kunden</option>
+              <option value="both">Beides</option>
+            </select>
+          </label>
+          <label className="span-2">
+            Empfohlener Standardstil
+            <select value={template.defaultStyleId} onChange={(e) => updateField('defaultStyleId', e.target.value)}>
+              <option value="">Kein Stil</option>
+              {styles.map((style) => (
+                <option key={style.id} value={style.id}>
+                  {style.name} ({style.language?.toUpperCase()})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </section>
       <section>
         <div className="section-header">
           <h2>Variablen</h2>

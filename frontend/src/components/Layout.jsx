@@ -7,7 +7,7 @@ const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/templates', label: 'Templates' },
   { to: '/proposals', label: 'Proposals' },
-  { to: '/customer-styles', label: 'Kundenstile' },
+  { to: '/customers', label: 'Kunden' },
   { to: '/products', label: 'Products' },
   { to: '/settings/branding', label: 'Settings' },
 ];
