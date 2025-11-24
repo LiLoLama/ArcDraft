@@ -1,4 +1,8 @@
+import PropTypes from 'prop-types';
 import { useEffect, useMemo, useState } from 'react';
+import { apiRequest } from '../api/client';
+import { StatusBadge } from '../components/StatusBadge';
+import useAuthStore from '../store/authStore';
 import useCustomerStore from '../store/customerStore';
 import useCustomerStyleStore from '../store/customerStyleStore';
 
@@ -22,16 +26,38 @@ export default function CustomersPage() {
   const removeCustomer = useCustomerStore((s) => s.removeCustomer);
   const styles = useCustomerStyleStore((s) => s.styles);
   const initializeStyles = useCustomerStyleStore((s) => s.initializeStyles);
+  const token = useAuthStore((s) => s.token);
 
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyCustomer);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [customerProposals, setCustomerProposals] = useState([]);
+  const [loadingProposals, setLoadingProposals] = useState(false);
+  const [proposalError, setProposalError] = useState('');
 
   useEffect(() => {
     initializeCustomers();
     initializeStyles();
   }, [initializeCustomers, initializeStyles]);
+
+  const openDetails = async (customer) => {
+    setSelectedCustomer(customer);
+    setShowDetails(true);
+    if (!token) return;
+    setLoadingProposals(true);
+    setProposalError('');
+    try {
+      const proposals = await apiRequest('/api/proposals', { token });
+      setCustomerProposals(proposals);
+    } catch (err) {
+      setProposalError(err.message || 'Proposals konnten nicht geladen werden.');
+    } finally {
+      setLoadingProposals(false);
+    }
+  };
 
   const filteredCustomers = useMemo(() => {
     if (!search.trim()) return customers;
@@ -139,7 +165,14 @@ export default function CustomersPage() {
       {filteredCustomers.length ? (
         <div className="product-grid management">
           {filteredCustomers.map((customer) => (
-            <article key={customer.id} className="product-row">
+            <article
+              key={customer.id}
+              className="product-row customer-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => openDetails(customer)}
+              onKeyDown={(e) => e.key === 'Enter' && openDetails(customer)}
+            >
               <div className="product-row-content">
                 <div>
                   <strong>{customer.name}</strong>
@@ -151,10 +184,24 @@ export default function CustomersPage() {
                   {customer.notes && <p className="muted small">Notizen: {customer.notes}</p>}
                 </div>
                 <div className="action-buttons">
-                  <button type="button" className="ghost-button" onClick={() => startEdit(customer)}>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEdit(customer);
+                    }}
+                  >
                     Bearbeiten
                   </button>
-                  <button type="button" className="ghost-button" onClick={() => removeCustomer(customer.id)}>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeCustomer(customer.id);
+                    }}
+                  >
                     Löschen
                   </button>
                 </div>
@@ -290,6 +337,110 @@ export default function CustomersPage() {
           </div>
         </div>
       )}
+
+      {showDetails && selectedCustomer && (
+        <div className="modal-overlay">
+          <div className="proposal-modal">
+            <div className="modal-header">
+              <div>
+                <p className="tagline">Kundenübersicht</p>
+                <h3>{selectedCustomer.name}</h3>
+                <p className="muted">{selectedCustomer.company || 'Kein Unternehmen hinterlegt'}</p>
+                <p className="muted small">{selectedCustomer.email || 'Keine E-Mail hinterlegt'}</p>
+              </div>
+              <button className="icon-button" type="button" aria-label="Popup schließen" onClick={() => setShowDetails(false)}>
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 3l10 10m0-10L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="modal-content customer-details-content">
+              <div className="grid grid-3">
+                <div className="card">
+                  <p className="muted small">Proposals</p>
+                  <h3>{customerProposals.filter((p) => p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email).length}</h3>
+                </div>
+                <div className="card">
+                  <p className="muted small">Signiert</p>
+                  <h3>
+                    {
+                      customerProposals.filter(
+                        (p) => (p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email) && ['signed', 'signiert'].includes(p.status),
+                      ).length
+                    }
+                  </h3>
+                </div>
+                <div className="card">
+                  <p className="muted small">Umsatz (Proposals)</p>
+                  <RevenueValue
+                    proposals={customerProposals.filter(
+                      (p) => p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email,
+                    )}
+                  />
+                </div>
+              </div>
+
+              <section className="customer-proposal-section">
+                <h4>Proposals</h4>
+                {loadingProposals && <p className="muted">Lade Daten...</p>}
+                {proposalError && <p className="error-msg">{proposalError}</p>}
+                {!loadingProposals && !proposalError && (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Titel</th>
+                        <th>Status</th>
+                        <th>Aktualisiert</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customerProposals
+                        .filter((proposal) => proposal.customerId === selectedCustomer.id || proposal.recipient?.email === selectedCustomer.email)
+                        .map((proposal) => (
+                          <tr key={proposal.id}>
+                            <td>{proposal.title}</td>
+                            <td>
+                              <StatusBadge status={proposal.status} />
+                            </td>
+                            <td>{proposal.updatedAt ? new Date(proposal.updatedAt).toLocaleString() : '—'}</td>
+                          </tr>
+                        ))}
+                      {!customerProposals.filter((proposal) => proposal.customerId === selectedCustomer.id || proposal.recipient?.email === selectedCustomer.email).length && (
+                        <tr>
+                          <td colSpan="3" className="muted">
+                            Keine Proposals vorhanden.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+function RevenueValue({ proposals }) {
+  const parsePrice = (value) => {
+    if (!value) return 0;
+    const normalized = String(value).replace(/[^0-9,.-]/g, '').replace(',', '.');
+    const num = parseFloat(normalized);
+    return Number.isFinite(num) ? num : 0;
+  };
+
+  const total = proposals.reduce((sum, proposal) => {
+    const productSum = (proposal.products || []).reduce((acc, product) => acc + parsePrice(product.price), 0);
+    return sum + productSum;
+  }, 0);
+
+  return <h3>{total.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</h3>;
+}
+
+RevenueValue.propTypes = {
+  proposals: PropTypes.arrayOf(PropTypes.object),
+};

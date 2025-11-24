@@ -15,12 +15,29 @@ async function apiRequest(path, { method = 'GET', body, token, headers } = {}) {
     options.body = JSON.stringify(body);
   }
   const res = await fetch(`${API_URL}${path}`, options);
+  const handleInvalidToken = () => {
+    try {
+      localStorage.removeItem('arcdraft_token');
+      localStorage.removeItem('arcdraft_user');
+    } catch (err) {
+      console.error('Failed to clear auth session', err);
+    }
+  };
   if (!res.ok) {
     const text = await res.text();
     try {
       const parsed = JSON.parse(text || '{}');
-      throw new Error(parsed.message || 'Request failed');
+      const message = parsed.message || 'Request failed';
+      if (res.status === 401 && message.toLowerCase().includes('invalid token')) {
+        handleInvalidToken();
+        throw new Error('Session abgelaufen. Bitte erneut einloggen.');
+      }
+      throw new Error(message);
     } catch (err) {
+      if (res.status === 401 && text.toLowerCase().includes('invalid token')) {
+        handleInvalidToken();
+        throw new Error('Session abgelaufen. Bitte erneut einloggen.');
+      }
       throw new Error(text || 'Request failed');
     }
   }
