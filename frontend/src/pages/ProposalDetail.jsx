@@ -24,6 +24,12 @@ export default function ProposalDetailPage() {
     setProposal(updated);
   };
 
+  const handleSendEmail = () => {
+    const subject = encodeURIComponent(`Proposal: ${proposal.title}`);
+    const body = encodeURIComponent(`Hi ${proposal.recipient?.name || ''},\n\nHier ist dein Proposal: ${publicUrl}`);
+    window.location.href = `mailto:${proposal.recipient?.email || ''}?subject=${subject}&body=${body}`;
+  };
+
   return (
     <div className="page proposal-detail">
       <div className="page-header">
@@ -32,6 +38,9 @@ export default function ProposalDetailPage() {
           <p className="muted">{proposal.recipient?.name}</p>
         </div>
         <div className="actions">
+          <button className="ghost-button" onClick={handleSendEmail}>
+            Per Mail senden
+          </button>
           <button className="ghost-button" onClick={() => navigator.clipboard.writeText(publicUrl)}>
             Public Link kopieren
           </button>
@@ -41,6 +50,15 @@ export default function ProposalDetailPage() {
           <button className="primary" onClick={() => updateStatus('sent')}>
             Mark as Sent
           </button>
+          <div className="options-wrapper">
+            <button className="ghost-button">Optionen</button>
+            <div className="options-menu">
+              <button type="button" className="menu-item">Delete</button>
+              <button type="button" className="menu-item">Save as Template</button>
+              <button type="button" className="menu-item">Mark as Lost</button>
+              <button type="button" className="menu-item">Manually approve</button>
+            </div>
+          </div>
         </div>
       </div>
       <div className="meta-grid">
@@ -53,7 +71,7 @@ export default function ProposalDetailPage() {
           <p>{proposal.templateId || '—'}</p>
         </div>
         <div>
-          <h4>Erstellt</h4>
+          <h4>Erstellt am</h4>
           <p>{new Date(proposal.createdAt).toLocaleString()}</p>
         </div>
         <div>

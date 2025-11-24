@@ -4,10 +4,12 @@ const statusColors = {
   sent: 'badge-green',
   viewed: 'badge-cyan',
   signed: 'badge-green',
+  signiert: 'badge-green',
   declined: 'badge-red',
   expired: 'badge-orange',
 };
 
 export function StatusBadge({ status }) {
-  return <span className={`status-badge ${statusColors[status] || 'badge-gray'}`}>{status?.replaceAll('_', ' ')}</span>;
+  const displayLabel = status === 'signed' ? 'signiert' : status?.replaceAll('_', ' ');
+  return <span className={`status-badge ${statusColors[status] || 'badge-gray'}`}>{displayLabel}</span>;
 }

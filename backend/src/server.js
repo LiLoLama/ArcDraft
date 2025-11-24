@@ -114,7 +114,7 @@ function computeProposalAnalytics(proposalId) {
 function computeOverview(ownerId) {
   const ownerProposals = proposals.filter((p) => p.ownerId === ownerId);
   const proposalsTotal = ownerProposals.length;
-  const proposalsSigned = ownerProposals.filter((p) => p.status === 'signed').length;
+  const proposalsSigned = ownerProposals.filter((p) => ['signed', 'signiert'].includes(p.status)).length;
   const conversionRate = proposalsTotal ? Math.round((proposalsSigned / proposalsTotal) * 100) : 0;
   const cutoff = dayjs().subtract(30, 'day');
   const viewsLast30Days = analyticsEvents.filter(
@@ -174,15 +174,29 @@ app.get('/api/templates', authMiddleware, (req, res) => {
 });
 
 app.post('/api/templates', authMiddleware, (req, res) => {
-  const { name, description, sections = [], variablesSchema = [], status = 'draft' } = req.body;
+  const {
+    name,
+    description,
+    status = 'draft',
+    projectTitle = '',
+    projectDescription = '',
+    tone = 'freundlich',
+    language = 'de',
+    productIds = [],
+    customProducts = [],
+  } = req.body;
   const template = {
     id: nanoid(),
     ownerId: req.user.id,
     name,
     description,
     status,
-    sections,
-    variablesSchema,
+    projectTitle,
+    projectDescription,
+    tone,
+    language,
+    productIds,
+    customProducts,
     createdAt: now(),
     updatedAt: now(),
   };
@@ -252,7 +266,10 @@ app.post('/api/proposals/ai-generate', authMiddleware, (req, res) => {
 app.get('/api/proposals', authMiddleware, (req, res) => {
   const { status } = req.query;
   let ownerProposals = proposals.filter((p) => p.ownerId === req.user.id);
-  if (status) ownerProposals = ownerProposals.filter((p) => p.status === status);
+  if (status) {
+    const allowedStatuses = ['signiert', 'signed'].includes(status) ? ['signiert', 'signed'] : [status];
+    ownerProposals = ownerProposals.filter((p) => allowedStatuses.includes(p.status));
+  }
   res.json(ownerProposals);
 });
 
@@ -350,7 +367,7 @@ app.post('/api/public/proposals/:slug/events', (req, res) => {
 app.post('/api/public/proposals/:slug/sign', (req, res) => {
   const proposal = proposals.find((p) => p.publicSlug === req.params.slug);
   if (!proposal) return res.status(404).json({ message: 'Not found' });
-  if (proposal.status === 'signed') return res.status(400).json({ message: 'Already signed' });
+  if (proposal.status === 'signed' || proposal.status === 'signiert') return res.status(400).json({ message: 'Already signed' });
   const { signerName, signerEmail, signatureType, signatureData } = req.body;
   if (!signerName || !signatureType || !signatureData) return res.status(400).json({ message: 'Invalid payload' });
   const signature = {
@@ -366,7 +383,7 @@ app.post('/api/public/proposals/:slug/sign', (req, res) => {
     proposalContentHash: Buffer.from(JSON.stringify(proposal.sections)).toString('base64'),
   };
   addSignature(signature);
-  const updatedProposal = updateProposal(proposal.id, { status: 'signed', signedAt: signature.signedAt });
+  const updatedProposal = updateProposal(proposal.id, { status: 'signiert', signedAt: signature.signedAt });
   addAnalyticsEvent({ id: nanoid(), proposalId: proposal.id, eventType: 'signed', metadata: { signerName }, createdAt: signature.signedAt });
   emitIntegrationEvent('proposal.signed', { proposalId: proposal.id, ownerId: proposal.ownerId, signerName });
   res.json({ proposal: sanitizeProposalForPublic(updatedProposal), signature });
