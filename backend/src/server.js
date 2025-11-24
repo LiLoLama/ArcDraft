@@ -250,6 +250,8 @@ app.post('/api/proposals/ai-generate', authMiddleware, (req, res) => {
       email: payload.clientEmail,
       company: payload.clientCompany,
     },
+    customerId: payload.customerId || null,
+    products: payload.products || [],
     publicSlug: generatePublicSlug(),
     passcode: payload.passcode || null,
     signedAt: null,
