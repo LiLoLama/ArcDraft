@@ -165,7 +165,14 @@ export default function CustomersPage() {
       {filteredCustomers.length ? (
         <div className="product-grid management">
           {filteredCustomers.map((customer) => (
-            <article key={customer.id} className="product-row" role="button" tabIndex={0} onClick={() => openDetails(customer)} onKeyDown={(e) => e.key === 'Enter' && openDetails(customer)}>
+            <article
+              key={customer.id}
+              className="product-row customer-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => openDetails(customer)}
+              onKeyDown={(e) => e.key === 'Enter' && openDetails(customer)}
+            >
               <div className="product-row-content">
                 <div>
                   <strong>{customer.name}</strong>
@@ -348,67 +355,69 @@ export default function CustomersPage() {
               </button>
             </div>
 
-            <div className="grid grid-3">
-              <div className="card">
-                <p className="muted small">Proposals</p>
-                <h3>{customerProposals.filter((p) => p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email).length}</h3>
-              </div>
-              <div className="card">
-                <p className="muted small">Signiert</p>
-                <h3>
-                  {
-                    customerProposals.filter(
-                      (p) => (p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email) && ['signed', 'signiert'].includes(p.status),
-                    ).length
-                  }
-                </h3>
-              </div>
-              <div className="card">
-                <p className="muted small">Umsatz (Proposals)</p>
-                <RevenueValue
-                  proposals={customerProposals.filter(
-                    (p) => p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email,
-                  )}
-                />
-              </div>
-            </div>
-
-            <section>
-              <h4>Proposals</h4>
-              {loadingProposals && <p className="muted">Lade Daten...</p>}
-              {proposalError && <p className="error-msg">{proposalError}</p>}
-              {!loadingProposals && !proposalError && (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Titel</th>
-                      <th>Status</th>
-                      <th>Aktualisiert</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {customerProposals
-                      .filter((proposal) => proposal.customerId === selectedCustomer.id || proposal.recipient?.email === selectedCustomer.email)
-                      .map((proposal) => (
-                        <tr key={proposal.id}>
-                          <td>{proposal.title}</td>
-                          <td>
-                            <StatusBadge status={proposal.status} />
-                          </td>
-                          <td>{proposal.updatedAt ? new Date(proposal.updatedAt).toLocaleString() : '—'}</td>
-                        </tr>
-                      ))}
-                    {!customerProposals.filter((proposal) => proposal.customerId === selectedCustomer.id || proposal.recipient?.email === selectedCustomer.email).length && (
-                      <tr>
-                        <td colSpan="3" className="muted">
-                          Keine Proposals vorhanden.
-                        </td>
-                      </tr>
+            <div className="modal-content customer-details-content">
+              <div className="grid grid-3">
+                <div className="card">
+                  <p className="muted small">Proposals</p>
+                  <h3>{customerProposals.filter((p) => p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email).length}</h3>
+                </div>
+                <div className="card">
+                  <p className="muted small">Signiert</p>
+                  <h3>
+                    {
+                      customerProposals.filter(
+                        (p) => (p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email) && ['signed', 'signiert'].includes(p.status),
+                      ).length
+                    }
+                  </h3>
+                </div>
+                <div className="card">
+                  <p className="muted small">Umsatz (Proposals)</p>
+                  <RevenueValue
+                    proposals={customerProposals.filter(
+                      (p) => p.customerId === selectedCustomer.id || p.recipient?.email === selectedCustomer.email,
                     )}
-                  </tbody>
-                </table>
-              )}
-            </section>
+                  />
+                </div>
+              </div>
+
+              <section className="customer-proposal-section">
+                <h4>Proposals</h4>
+                {loadingProposals && <p className="muted">Lade Daten...</p>}
+                {proposalError && <p className="error-msg">{proposalError}</p>}
+                {!loadingProposals && !proposalError && (
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Titel</th>
+                        <th>Status</th>
+                        <th>Aktualisiert</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {customerProposals
+                        .filter((proposal) => proposal.customerId === selectedCustomer.id || proposal.recipient?.email === selectedCustomer.email)
+                        .map((proposal) => (
+                          <tr key={proposal.id}>
+                            <td>{proposal.title}</td>
+                            <td>
+                              <StatusBadge status={proposal.status} />
+                            </td>
+                            <td>{proposal.updatedAt ? new Date(proposal.updatedAt).toLocaleString() : '—'}</td>
+                          </tr>
+                        ))}
+                      {!customerProposals.filter((proposal) => proposal.customerId === selectedCustomer.id || proposal.recipient?.email === selectedCustomer.email).length && (
+                        <tr>
+                          <td colSpan="3" className="muted">
+                            Keine Proposals vorhanden.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </section>
+            </div>
           </div>
         </div>
       )}
